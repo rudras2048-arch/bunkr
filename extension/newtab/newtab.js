@@ -948,13 +948,13 @@ function initNewTab() {
       const slotMinutes = h * 60 + m;
       const diffMins = slotMinutes - curMinutes;
 
-      heroTitle.textContent = `📍 Move — ${nextClass.acronym} starts in ${diffMins}m`;
-      heroDetails.textContent = `${nextClass.subjectName} • Room ${nextClass.room || 'TBA'} at ${nextClass.time}`;
+      heroTitle.textContent = `Move — ${nextClass.acronym} starts in ${diffMins}m`;
+      heroDetails.textContent = `${nextClass.subjectName} · Room ${nextClass.room || 'TBA'} at ${nextClass.time}`;
       heroCountdown.textContent = `Starts at ${nextClass.time} (${diffMins} minutes away)`;
     } else {
-      heroTitle.textContent = '🎉 All Classes Done for Today!';
+      heroTitle.textContent = 'All classes done for today';
       heroDetails.textContent = 'You have completed all scheduled sessions for today.';
-      heroCountdown.textContent = 'Rest easy • See you tomorrow';
+      heroCountdown.textContent = 'Rest easy · See you tomorrow';
     }
   }
 
@@ -1031,10 +1031,10 @@ function initNewTab() {
           remSubEl.textContent = `${semSummary.teachingDaysLeft} teaching days till ${semSummary.endDateFormatted}`;
         }
         if (semSubEl) {
-          semSubEl.innerHTML = `Forecast to semester finish (${semSummary.endDateFormatted}) &bull; Target: <strong id="proj-target-val" style="color:#F8FAFC;">${proj.targetPercentage}%</strong>`;
+          semSubEl.innerHTML = `Forecast to semester finish (${semSummary.endDateFormatted}) &middot; Target: <strong id="proj-target-val" style="color:var(--ink);">${proj.targetPercentage}%</strong>`;
         }
         if (footerTextEl) {
-          footerTextEl.textContent = `Bunkr 2.4.2 • Private & Local • Semester ends: ${semSummary.endDateFormatted}`;
+          footerTextEl.textContent = `Bunkr 2.4.2 · Private & Local · Semester ends: ${semSummary.endDateFormatted}`;
         }
       }
 
@@ -1051,11 +1051,13 @@ function initNewTab() {
       // Coach Insights (speaks ONLY when needed)
       if (coachBadge && coachList) {
         if (proj.atRiskCourses.length === 0) {
-          coachBadge.textContent = 'Silence (Healthy)';
+          coachBadge.textContent = 'Healthy standing';
           coachBadge.className = 'coach-badge';
           coachList.innerHTML = `
             <div class="coach-callout-item healthy">
-              <span class="coach-callout-icon">✓</span>
+              <span class="coach-callout-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
               <span>${proj.coachHealthySummary}</span>
             </div>
           `;
@@ -1064,7 +1066,9 @@ function initNewTab() {
           coachBadge.className = 'coach-badge warning';
           coachList.innerHTML = proj.atRiskCourses.map((c) => `
             <div class="coach-callout-item">
-              <span class="coach-callout-icon">⚠️</span>
+              <span class="coach-callout-icon" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </span>
               <div>
                 <strong>${c.name} (${c.acronym})</strong>: ${c.callout}
               </div>
@@ -1405,20 +1409,20 @@ function initNewTab() {
     if (calloutBox && calloutText) {
       if (simResult.isAlreadyAchieved) {
         calloutBox.className = 'sgpa-callout-box achieved';
-        if (calloutIcon) calloutIcon.textContent = '🎉';
-        calloutText.innerHTML = `<strong>Target Already Secured!</strong> Your current credit-weighted academic standing is <strong>${simResult.currentSGPA.toFixed(2)} SGPA (${simResult.currentPercentage.toFixed(1)}%)</strong>, meeting or exceeding your target of ${simResult.targetSGPA.toFixed(1)} SGPA.`;
+        if (calloutIcon) calloutIcon.textContent = '';
+        calloutText.innerHTML = `<strong>Target Already Secured:</strong> Your current credit-weighted academic standing is <strong>${simResult.currentSGPA.toFixed(2)} SGPA (${simResult.currentPercentage.toFixed(1)}%)</strong>, meeting or exceeding your target of ${simResult.targetSGPA.toFixed(1)} SGPA.`;
       } else if (!simResult.isAchievable) {
         calloutBox.className = 'sgpa-callout-box impossible';
-        if (calloutIcon) calloutIcon.textContent = '⚠️';
+        if (calloutIcon) calloutIcon.textContent = '';
         const reason = simResult.unreachableReason || `Requires pace exceeding 100% across remaining assessments`;
         calloutText.innerHTML = `<strong>Target Unreachable:</strong> Maximum attainable standing across all remaining assessments is <strong>${simResult.maxPossibleSGPA.toFixed(2)} SGPA (${simResult.maxPossiblePercentage.toFixed(1)}%)</strong>. Target ${simResult.targetSGPA.toFixed(1)} cannot be achieved. ${escapeHtml(reason)}.`;
       } else if (simResult.isZeroSlipMargin) {
         calloutBox.className = 'sgpa-callout-box zeroslip warning';
-        if (calloutIcon) calloutIcon.textContent = '⚠️';
-        calloutText.innerHTML = `<strong>⚠️ Zero-slip margin:</strong> To achieve <strong>${simResult.targetSGPA.toFixed(1)} SGPA (${simResult.targetPercentage.toFixed(1)}%)</strong>, you need an average of <strong>${simResult.requiredPaceOnRemaining}% marks</strong> across remaining assessments in all active courses. Even a minor penalty will prevent achieving this target.`;
+        if (calloutIcon) calloutIcon.textContent = '';
+        calloutText.innerHTML = `<strong>Zero-slip margin:</strong> To achieve <strong>${simResult.targetSGPA.toFixed(1)} SGPA (${simResult.targetPercentage.toFixed(1)}%)</strong>, you need an average of <strong>${simResult.requiredPaceOnRemaining}% marks</strong> across remaining assessments in all active courses. Even a minor penalty will prevent achieving this target.`;
       } else {
         calloutBox.className = 'sgpa-callout-box';
-        if (calloutIcon) calloutIcon.textContent = '🎯';
+        if (calloutIcon) calloutIcon.textContent = '';
         calloutText.innerHTML = `To achieve <strong>${simResult.targetSGPA.toFixed(1)} SGPA (${simResult.targetPercentage.toFixed(1)}%)</strong>: You need an average of <strong>${simResult.requiredPaceOnRemaining}% marks</strong> across remaining assessments in all active courses.`;
       }
     }
@@ -1485,9 +1489,9 @@ function initNewTab() {
               <div class="sgpa-target-badge ${badgeClass}">${badgeText}</div>
             </div>
             <div class="sgpa-course-meta">
-              Locked: <strong style="color:#F8FAFC;">${c.lockedPercentage.toFixed(1)}% (${c.lockedSGPA.toFixed(currentScaleMode === 'ugc' ? 0 : 2)} SGPA${gradeSuffix})</strong>
-              &bull; Max Possible: <strong style="color:#60A5FA;">${c.maxPossiblePercentage.toFixed(1)}% (${c.maxPossibleSGPA.toFixed(currentScaleMode === 'ugc' ? 0 : 2)} SGPA)</strong>
-              &bull; Remaining Weight: <strong>${c.remainingWeight.toFixed(1)}%</strong>
+              Locked: <strong>${c.lockedPercentage.toFixed(1)}% (${c.lockedSGPA.toFixed(currentScaleMode === 'ugc' ? 0 : 2)} SGPA${gradeSuffix})</strong>
+              · Max Possible: <strong>${c.maxPossiblePercentage.toFixed(1)}% (${c.maxPossibleSGPA.toFixed(currentScaleMode === 'ugc' ? 0 : 2)} SGPA)</strong>
+              · Remaining Weight: <strong>${c.remainingWeight.toFixed(1)}%</strong>
             </div>
             <div class="sgpa-bar-bg">
               <div class="sgpa-bar-locked" style="width: ${lockedBarPct}%;" title="Locked: ${c.lockedPercentage}%"></div>
@@ -2500,6 +2504,14 @@ function initNewTab() {
       excusedLeaves: excusedCheck && excusedCheck.checked ? 1 : 0
     });
     lastTripPlan = plan;
+    if (typeof window !== 'undefined') {
+      window.__bunkrCommandState = {
+        subjects,
+        targetPercentage: targetPct,
+        lastTripPlan: plan
+      };
+      window.dispatchEvent(new CustomEvent('bunkr:state-updated'));
+    }
 
     if (!plan.valid) {
       verdictBox.className = 'trip-verdict danger';
@@ -2521,7 +2533,7 @@ function initNewTab() {
     }
 
     coursesEl.innerHTML = plan.affectedCourses.map((c) => {
-      const pctColor = c.safeAfter ? '#34D399' : '#FCA5A5';
+      const pctToneClass = c.safeAfter ? 'is-safe' : 'is-risk';
       const detail = c.safeAfter
         ? (c.excusedApplied > 0 ? `Safe (${c.excusedApplied} excused applied)` : 'Remains above target')
         : (c.excusedLeavesToSave > 0
@@ -2530,8 +2542,8 @@ function initNewTab() {
       return `
         <div class="trip-course-tile ${c.safeAfter ? '' : 'risk'}">
           <div class="trip-course-top">
-            <span class="trip-course-name">${c.acronym} &middot; ${c.name}</span>
-            <span class="trip-course-pct" style="color:${pctColor};">${c.beforePct.toFixed(0)}% → ${c.afterPct.toFixed(1)}%</span>
+            <span class="trip-course-name">${c.acronym} · ${c.name}</span>
+            <span class="trip-course-pct ${pctToneClass}">${c.beforePct.toFixed(0)}% → ${c.afterPct.toFixed(1)}%</span>
           </div>
           <div class="trip-course-sub">
             <span>-${c.missed} class${c.missed === 1 ? '' : 'es'}</span>

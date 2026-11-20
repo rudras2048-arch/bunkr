@@ -157,23 +157,23 @@
   opacity: 0.85 !important;
 }
 
-/* Native Rishiverse Summary Strip (Clean Light Surface, No Clutter) */
+/* Native Rishiverse Summary Strip (Bunkr Studio Daylight Surface) */
 #bunkr-page-banner,
 #attendmate-page-banner {
   margin-bottom: 18px !important;
-  padding: 12px 16px !important;
+  padding: 13px 18px !important;
   background-color: #FFFFFF !important;
   border: 1px solid #E5E7EB !important;
   border-radius: 12px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
   font-size: 13px !important;
-  color: #0F172A !important;
+  color: #0B0F19 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 14px !important;
   flex-wrap: wrap !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 1px 2px rgba(11, 15, 25, 0.04) !important;
 }
 
 .am-banner-left {
@@ -256,12 +256,12 @@
 
 .bunkr-banner-btn,
 .attendmate-banner-btn {
-  background-color: #0F172A !important;
+  background-color: #0B0F19 !important;
   color: #FFFFFF !important;
   border: 1px solid transparent !important;
   border-radius: 8px !important;
   padding: 7px 13px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
@@ -269,36 +269,37 @@
   align-items: center !important;
   gap: 6px !important;
   white-space: nowrap !important;
-  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+  transition: background-color 0.16s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.16s ease !important;
   line-height: 1.2 !important;
 }
 
 .am-btn-trip {
-  background-color: #0F172A !important;
+  background-color: #C81E2B !important;
   color: #FFFFFF !important;
 }
 
 .am-btn-trip:hover {
-  background-color: #1E293B !important;
+  background-color: #A61722 !important;
 }
 
 .am-btn-share {
-  background-color: #059669 !important;
+  background-color: #0B0F19 !important;
   color: #FFFFFF !important;
 }
 
 .am-btn-share:hover {
-  background-color: #047857 !important;
+  background-color: #1F2937 !important;
 }
 
 .am-btn-subtle {
   background-color: #FFFFFF !important;
-  color: #334155 !important;
-  border: 1px solid #E2E8F0 !important;
+  color: #374151 !important;
+  border: 1px solid #E5E7EB !important;
 }
 
 .am-btn-subtle:hover {
-  background-color: #F8FAFC !important;
+  background-color: #F7F8FA !important;
+  border-color: #D1D5DB !important;
 }
 
 .am-tools-wrap {
@@ -349,10 +350,10 @@
   border: 1px solid #E2E8F0 !important;
   border-radius: 16px !important;
   padding: 20px !important;
-  z-index: 100001 !important;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2) !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
-  color: #0F172A !important;
+  z-index: 999999 !important;
+  box-shadow: 0 24px 48px rgba(11, 15, 25, 0.22) !important;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  color: #0B0F19 !important;
 }
 
 .am-trip-header {
@@ -548,22 +549,22 @@
   border-color: #FDE68A !important;
 }
 
-/* Drift Alarm Banner */
+/* Drift Alarm Banner (Crisp Hairline — Zero Thick Left Bar) */
 #bunkr-drift-banner,
 #attendmate-drift-banner {
   margin: 0 0 16px 0 !important;
-  padding: 12px 18px !important;
+  padding: 13px 16px !important;
   background-color: #FFFBEB !important;
   border: 1px solid #FCD34D !important;
-  border-left: 5px solid #F59E0B !important;
-  border-radius: 10px !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  border-radius: 12px !important;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 14px !important;
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08) !important;
-  animation: amFadeIn 0.3s ease-out !important;
+  flex-wrap: wrap !important;
+  box-shadow: 0 1px 3px rgba(180, 83, 9, 0.08) !important;
+  animation: amFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .am-drift-left {
@@ -573,8 +574,15 @@
 }
 
 .am-drift-icon {
-  font-size: 20px !important;
-  line-height: 1 !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  background: #FEF3C7 !important;
+  color: #B45309 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
 }
 
 .am-drift-title {
@@ -745,19 +753,37 @@
 }
 
 .am-popover-input {
-  width: 80px !important;
-  padding: 6px 10px !important;
-  border: 1px solid #CBD5E1 !important;
-  border-radius: 6px !important;
+  width: 84px !important;
+  padding: 7px 10px !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 8px !important;
   font-size: 14px !important;
   font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
   text-align: center !important;
+  color: #0B0F19 !important;
 }
 
 .am-popover-input:focus {
-  border-color: #4F46E5 !important;
+  border-color: #C81E2B !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(200, 30, 43, 0.14) !important;
+}
+
+.am-override-error {
+  display: none !important;
+  margin-top: 8px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+  background: #FEF2F2 !important;
+  border: 1px solid #FECACA !important;
+  color: #B91C1C !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.am-override-error.visible {
+  display: block !important;
 }
 
 .am-popover-actions {
@@ -765,7 +791,7 @@
   align-items: center !important;
   justify-content: flex-end !important;
   gap: 8px !important;
-  margin-top: 18px !important;
+  margin-top: 16px !important;
   padding-top: 14px !important;
   border-top: 1px solid #F1F5F9 !important;
 }
@@ -773,17 +799,17 @@
 .am-btn-ghost {
   background: none !important;
   border: none !important;
-  color: #64748B !important;
+  color: #4B5563 !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
-  padding: 6px 12px !important;
-  border-radius: 6px !important;
+  padding: 7px 12px !important;
+  border-radius: 7px !important;
 }
 
 .am-btn-ghost:hover {
-  background: #F1F5F9 !important;
-  color: #0F172A !important;
+  background: #F3F4F6 !important;
+  color: #0B0F19 !important;
 }
 
 .am-btn-reset {
@@ -793,8 +819,8 @@
   font-size: 12px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
-  padding: 6px 10px !important;
-  border-radius: 6px !important;
+  padding: 7px 10px !important;
+  border-radius: 7px !important;
   margin-right: auto !important;
 }
 
@@ -803,10 +829,10 @@
 }
 
 .am-btn-save {
-  background-color: #4F46E5 !important;
+  background-color: #C81E2B !important;
   color: #FFFFFF !important;
   border: none !important;
-  border-radius: 6px !important;
+  border-radius: 7px !important;
   padding: 7px 16px !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
@@ -815,7 +841,7 @@
 }
 
 .am-btn-save:hover {
-  background-color: #4338CA !important;
+  background-color: #A61722 !important;
 }
 
 /* Diagnostics Feedback Toast */

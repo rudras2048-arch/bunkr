@@ -127,3 +127,38 @@ test('manifest.json preserves Chrome Web Store minimal permissions contract', ()
   assert.deepEqual(manifest.permissions, ['storage', 'notifications', 'alarms']);
   assert.equal(manifest.chrome_url_overrides, undefined);
 });
+
+const shareCard = require('../extension/lib/share_card.js');
+
+test('BunkrShareCard.buildShareCardModel prioritizes at-risk courses and embeds trip verdicts', () => {
+  const plan = engine.simulateLeavePlan(SAMPLE_COURSES, '2026-10-12', '2026-10-14', { targetPercentage: 75 });
+  const model = shareCard.buildShareCardModel({
+    subjects: SAMPLE_COURSES,
+    targetPercentage: 75,
+    sectionLabel: 'B.Tech CSE · Sec-A',
+    semesterLabel: 'Diwali Semester 2026',
+    tripPlan: plan,
+    includeTrip: true,
+    dateLabel: 'Oct 12, 2026'
+  });
+
+  assert.equal(model.totalCourses, 6);
+  assert.equal(model.safeCount, 5);
+  assert.equal(model.riskCount, 1);
+  assert.equal(model.featuredCourses.length, 4);
+  // At-risk course (KPMG 33.3%) must sort first
+  assert.match(model.featuredCourses[0].name, /KPMG/i);
+  assert.equal(model.featuredCourses[0].statusTone, 'danger');
+  assert.ok(model.overallCanBunk > 0);
+  assert.match(model.headline, /safe overall bunk/i);
+  assert.ok(model.tripSummary);
+  assert.equal(model.tripSummary.missed, plan.totalMissedSessions);
+
+  // Empty subjects graceful fallback
+  const emptyModel = shareCard.buildShareCardModel({ subjects: [], targetPercentage: 80 });
+  assert.equal(emptyModel.totalCourses, 0);
+  assert.equal(emptyModel.overallPct, 0);
+  assert.equal(emptyModel.headline, 'Ready to track attendance');
+  assert.equal(emptyModel.tripSummary, null);
+});
+

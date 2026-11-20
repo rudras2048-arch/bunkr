@@ -412,7 +412,7 @@
     text += `- **DOM Elements**: Tables: ${domTables}, Cards: ${domCards}\n`;
     text += `- **Last Sync**: ${cachedData?.timestamp ? new Date(cachedData.timestamp).toISOString() : 'Never'}\n`;
     text += `- **Freshness**: ${formatFreshness(cachedData?.timestamp, portal)}\n`;
-    text += `- **Scrape Status**: ${drift.drifted ? `⚠️ Drift Alert (${drift.reason})` : '✅ Clean Scrape'}\n`;
+    text += `- **Scrape Status**: ${drift.drifted ? `Drift Alert (${drift.reason})` : 'Clean Scrape'}\n`;
     text += `- **Active Overrides**: ${overrideKeys.length} courses manually set\n\n`;
 
     text += `#### Courses Overview\n`;
@@ -429,12 +429,12 @@
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => {
-        showToast('✅ Diagnostics copied! Paste into chat to debug.');
+        showToast('Diagnostics copied to clipboard.');
       }).catch(() => {
-        prompt('Copy Bunkr Diagnostics:', text);
+        showToast('Clipboard unavailable — open Command Center to export diagnostics.');
       });
     } else {
-      prompt('Copy Bunkr Diagnostics:', text);
+      showToast('Clipboard unavailable in this browser context.');
     }
   }
 
@@ -457,7 +457,7 @@
     const scrapedText = subj.isManualOverride ? `Original scrape was ${subj.scrapedAttended}/${subj.scrapedTotal}` : `Current scrape: ${currentAttended}/${currentTotal}`;
 
     popover.innerHTML = `
-      <div class="am-popover-title">✏️ Manual Attendance Override</div>
+      <div class="am-popover-title">Manual Attendance Override</div>
       <div class="am-popover-sub"><strong>${subj.name}</strong><br><small style="color:#64748B;">${scrapedText}</small></div>
       
       <div class="am-popover-row">
@@ -469,6 +469,8 @@
         <label for="am-input-total">Classes Held (Total):</label>
         <input type="number" id="am-input-total" class="am-popover-input" min="1" max="200" value="${currentTotal}">
       </div>
+
+      <div id="am-override-error" class="am-override-error" role="alert"></div>
 
       <div class="am-popover-actions">
         ${subj.isManualOverride ? `<button id="am-modal-reset-btn" class="am-btn-reset" title="Discard manual override and revert to page scrape">Reset to Live</button>` : ''}
@@ -492,16 +494,23 @@
       });
     }
 
+    const errBox = popover.querySelector('#am-override-error');
+    const showErr = (msg) => {
+      if (!errBox) return;
+      errBox.textContent = msg;
+      errBox.classList.add('visible');
+    };
+
     popover.querySelector('#am-modal-save-btn').addEventListener('click', () => {
       const attVal = parseInt(popover.querySelector('#am-input-attended').value, 10);
       const totVal = parseInt(popover.querySelector('#am-input-total').value, 10);
 
       if (isNaN(attVal) || isNaN(totVal) || totVal <= 0 || attVal < 0) {
-        alert('Please enter valid positive numbers for attended and held classes.');
+        showErr('Enter valid non-negative numbers with at least 1 class held.');
         return;
       }
       if (attVal > totVal) {
-        alert('Attended classes cannot exceed total held classes.');
+        showErr('Attended classes cannot exceed total held classes.');
         return;
       }
 
@@ -614,16 +623,18 @@
 
     banner.innerHTML = `
       <div class="am-drift-left">
-        <span class="am-drift-icon">⚠️</span>
+        <span class="am-drift-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </span>
         <div>
           <div class="am-drift-title">The ERP page may have changed — showing last known data</div>
-          <div class="am-drift-sub">${drift.reason || 'Attendance structure changed'} &bull; ${freshnessStr}</div>
+          <div class="am-drift-sub">${drift.reason || 'Attendance structure changed'} &middot; ${freshnessStr}</div>
         </div>
       </div>
       <div class="am-drift-actions">
-        ${showAcceptLive ? `<button id="am-drift-accept-btn" class="am-drift-btn accept" title="Trust the current ERP counts and update saved baseline">✓ Use Current Data</button>` : ''}
-        <button id="am-drift-diag-btn" class="am-drift-btn" title="Copy debugging summary to clipboard">📋 Diagnostics</button>
-        <button id="am-drift-retry-btn" class="am-drift-btn primary" title="Retry scraping page">🔄 Retry Scrape</button>
+        ${showAcceptLive ? `<button id="am-drift-accept-btn" class="am-drift-btn accept" title="Trust the current ERP counts and update saved baseline">Use Current Data</button>` : ''}
+        <button id="am-drift-diag-btn" class="am-drift-btn" title="Copy debugging summary to clipboard">Diagnostics</button>
+        <button id="am-drift-retry-btn" class="am-drift-btn primary" title="Retry scraping page">Retry Scrape</button>
       </div>
     `;
 
@@ -633,7 +644,7 @@
         const acceptFn = window.BunkrAcceptCurrentScrape || window.AttendMateAcceptCurrentScrape;
         if (acceptFn) {
           acceptFn();
-          showToast('✅ Updated to current ERP attendance data');
+          showToast('Updated to current ERP attendance data.');
         } else {
           try {
             localStorage.removeItem('bunkr_last_good_scrape');
@@ -666,7 +677,7 @@
       const tag = document.getElementById('attendmate-freshness-text');
       if (tag && cachedData && cachedData.timestamp) {
         const text = formatFreshness(cachedData.timestamp, portal);
-        tag.innerHTML = `🕒 ${text}`;
+        tag.textContent = text;
       }
     }, 15000);
   }
@@ -824,7 +835,7 @@
       const text = engine.generateTripShareText(latestPlan);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-          showToast('✅ Trip plan copied for WhatsApp!');
+          showToast('Trip plan copied for WhatsApp.');
         }).catch(() => {});
       }
     });
@@ -969,7 +980,7 @@
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(shareText).then(() => {
-            showToast('✅ WhatsApp status copied to clipboard!');
+            showToast('WhatsApp status copied to clipboard.');
           }).catch(() => {
             showToast('Copy failed — clipboard permission denied.');
           });
@@ -1084,12 +1095,12 @@
       }
 
       if (subj.isManualOverride) {
-        bunkText += ` <span class="am-manual-pill">✏️ Manual (${subj.attended}/${subj.total})</span>`;
+        bunkText += ` <span class="am-manual-pill">Manual (${subj.attended}/${subj.total})</span>`;
       } else if (data?.drift?.drifted) {
         bunkText += ` <small style="color:#B45309; font-weight:600; font-size:11px;">(Last known)</small>`;
       }
 
-      bunkText += ` <span class="am-edit-trigger" title="Override attendance counts">✏️</span>`;
+      bunkText += ` <span class="am-edit-trigger" title="Override attendance counts">Edit</span>`;
 
       td.innerHTML = bunkText;
       td.style.cursor = 'pointer';

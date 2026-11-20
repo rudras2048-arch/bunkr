@@ -1,13 +1,15 @@
-// Bunkr 2.4.1 - Popup Controller
-// Phase 1 (Trust Layer) & Phase 2 (Proactive Departure Nudges)
+// Bunkr 2.4.2 — Studio Popup Controller
+// Unified Light/Dark theme, Circular Gauge, Inline Overrides (no prompt/alert), Trip Dates & Deadlines
 
 document.addEventListener('DOMContentLoaded', () => {
+  const THEME_KEY = 'bunkr_studio_theme';
   let attendanceData = null;
   let targetPercentage = 75;
   let manualOverrides = {};
   let lastSyncTimestamp = null;
   let activePortalName = 'Rishiverse';
   let freshnessInterval = null;
+  let editingSubjectName = null;
 
   let nudgesEnabled = true;
   let nudgeLeadMinutes = 10;
@@ -22,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const popupDriftSub = document.getElementById('popup-drift-sub');
   const popupFreshness = document.getElementById('popup-freshness');
   const overallPct = document.getElementById('overall-pct');
+  const overallRingArc = document.getElementById('overall-ring-arc');
+  const overallRingLabel = document.getElementById('overall-ring-label');
   const overallStatusPill = document.getElementById('overall-status-pill');
   const overallProgressFill = document.getElementById('overall-progress-fill');
   const targetLabel = document.getElementById('target-label');
@@ -79,13 +83,44 @@ document.addEventListener('DOMContentLoaded', () => {
     'self and society': 4
   };
 
-  // Initialize
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function initTheme() {
+    let saved = 'light';
+    try {
+      const stored = localStorage.getItem(THEME_KEY);
+      if (stored === 'dark' || stored === 'light') {
+        saved = stored;
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        saved = 'dark';
+      }
+    } catch (e) {}
+    document.documentElement.setAttribute('data-theme', saved);
+
+    const themeBtn = document.getElementById('popup-theme-btn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try {
+          localStorage.setItem(THEME_KEY, next);
+        } catch (e) {}
+      });
+    }
+  }
+
+  initTheme();
   init();
 
   function init() {
     loadStoredOverrides();
 
-    // Load storage
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.get([
         'cachedAttendance',
@@ -105,12 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
           targetPercentage = res.targetPercentage;
           updateTargetUI();
         }
-        if (res.manualOverrides) {
-          manualOverrides = res.manualOverrides;
-        }
-        if (res.lastSync) {
-          lastSyncTimestamp = res.lastSync;
-        }
+        if (res.manualOverrides) manualOverrides = res.manualOverrides;
+        if (res.lastSync) lastSyncTimestamp = res.lastSync;
         if (res.nudgesEnabled !== undefined) {
           nudgesEnabled = Boolean(res.nudgesEnabled);
           if (popupNudgeToggle) popupNudgeToggle.checked = nudgesEnabled;
@@ -130,18 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPopupDeadlines(res.canvas_assignments);
       });
 
-      // Listen for reactive storage updates across extension tabs
       chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName !== 'local') return;
         const engine = window.BunkrEngine || window.AttendMateEngine;
         if (changes.customTimetable) {
-          if (engine) {
-            engine.setActiveTimetable(changes.customTimetable.newValue || null);
-          }
+          if (engine) engine.setActiveTimetable(changes.customTimetable.newValue || null);
           renderTodayClasses();
-          if (attendanceData) {
-            renderAll();
-          }
+          if (attendanceData) renderAll();
         }
         if (changes.cachedAttendance && changes.cachedAttendance.newValue) {
           attendanceData = changes.cachedAttendance.newValue;
@@ -162,9 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       attendanceData = STANDALONE_DEMO_ATTENDANCE;
       lastSyncTimestamp = STANDALONE_DEMO_ATTENDANCE.timestamp;
-      if (connectionStatus) {
-        connectionStatus.textContent = '🟢 Rishiverse Preview Data';
-      }
+      if (connectionStatus) connectionStatus.textContent = 'Rishiverse Preview';
       renderAll();
       updateFreshnessText();
       renderTodayClasses();
@@ -178,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupActionButtons();
     setupNudgeControls();
 
-    // Start 15s ticker for freshness
     if (freshnessInterval) clearInterval(freshnessInterval);
     freshnessInterval = setInterval(updateFreshnessText, 15000);
   }
@@ -197,26 +220,20 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       const minutes = Math.floor(diffSeconds / 60);
       if (minutes < 60) {
-        relativeStr = `${minutes} min ago`;
+        relativeStr = `${minutes}m ago`;
       } else {
         const hours = Math.floor(minutes / 60);
-        if (hours < 24) {
-          relativeStr = `${hours} hr${hours === 1 ? '' : 's'} ago`;
-        } else {
-          const days = Math.floor(hours / 24);
-          relativeStr = `${days} day${days === 1 ? '' : 's'} ago`;
-        }
+        relativeStr = hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`;
       }
     }
 
-    const cleanPortal = portalName ? ` from ${portalName}` : '';
+    const cleanPortal = portalName ? ` · ${portalName}` : '';
     return `Synced ${relativeStr}${cleanPortal}`;
   }
 
   function updateFreshnessText() {
-    const text = formatFreshness(lastSyncTimestamp, activePortalName);
     if (popupFreshness) {
-      popupFreshness.textContent = `🕒 ${text}`;
+      popupFreshness.textContent = formatFreshness(lastSyncTimestamp, activePortalName);
     }
   }
 
@@ -244,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.local.set({ manualOverrides });
     }
 
+    editingSubjectName = null;
     notifyTabsOfOverride();
     renderAll();
   }
@@ -261,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.local.set({ manualOverrides });
     }
 
+    editingSubjectName = null;
     notifyTabsOfOverride();
     renderAll();
   }
@@ -283,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const key3 = subj.id ? String(subj.id).toLowerCase() : null;
 
       const override = manualOverrides[key1] || (key2 && manualOverrides[key2]) || (key3 && manualOverrides[key3]);
-
       if (override && typeof override.attended === 'number' && typeof override.total === 'number') {
         const attended = Math.max(0, override.attended);
         const total = Math.max(attended, override.total);
@@ -299,34 +317,24 @@ document.addEventListener('DOMContentLoaded', () => {
           isManualOverride: true
         };
       }
-      return {
-        ...subj,
-        isManualOverride: false
-      };
+      return { ...subj, isManualOverride: false };
     });
   }
 
   function queryActiveTab() {
     if (typeof chrome === 'undefined' || !chrome.tabs) return;
-
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const activeTab = tabs[0];
       if (!activeTab || !activeTab.id) return;
-
       const url = activeTab.url || '';
-      const isCanvas = /instructure\.com|canvas/i.test(url);
-      const isLms = /rishiverse|rishihood|instructure|canvas/i.test(url);
-
-      if (isCanvas) {
+      if (/instructure\.com|canvas/i.test(url)) {
         activePortalName = 'Canvas';
-        connectionStatus.textContent = '🎓 Canvas Attendance Connected';
-      } else if (isLms) {
+        connectionStatus.textContent = 'Canvas LMS Connected';
+      } else if (/rishiverse|rishihood/i.test(url)) {
         activePortalName = 'Rishiverse';
-        connectionStatus.textContent = '🟢 Rishiverse Connected';
-      } else {
-        if (!attendanceData) {
-          connectionStatus.textContent = 'Offline Demo / Portal';
-        }
+        connectionStatus.textContent = 'Rishiverse Connected';
+      } else if (!attendanceData) {
+        connectionStatus.textContent = 'Offline Mode';
       }
       updateFreshnessText();
     });
@@ -334,12 +342,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderAll() {
     if (!attendanceData || !attendanceData.overall) {
-      subjectList.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:#94A3B8;">No attendance data yet.<br>Open your Rishiverse or Canvas portal and click Sync.</div>`;
+      subjectList.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:var(--ink-muted);">No attendance data yet. Open Rishiverse or Canvas and click Sync Page.</div>`;
       return;
     }
 
     const effectiveSubjects = applyOverridesToSubjects(attendanceData.subjects || []);
-
     let totalAttended = 0;
     let totalHeld = 0;
     effectiveSubjects.forEach((s) => {
@@ -350,32 +357,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const overallPctVal = totalHeld > 0 ? (totalAttended / totalHeld) * 100 : 0;
     const math = window.BunkrMath || window.AttendMateMath;
     const status = math.getAttendanceStatus(totalAttended, totalHeld, targetPercentage);
+    const toneClass = overallPctVal >= targetPercentage ? 'is-safe' : 'is-danger';
 
-    // Summary Card
     overallPct.textContent = `${overallPctVal.toFixed(1)}%`;
-    overallPct.style.color = status.color;
+    overallPct.className = `summary-pct mono ${toneClass}`;
     overallStatusPill.textContent = status.text;
-    overallStatusPill.style.background = status.bg;
-    overallStatusPill.style.color = status.color;
-    overallStatusPill.style.border = `1px solid ${status.borderColor}`;
+    overallStatusPill.className = `summary-status-text ${toneClass}`;
 
-    overallProgressFill.style.width = `${Math.min(100, overallPctVal)}%`;
-    overallProgressFill.style.background = status.color;
+    // Precision SVG Circular Ring (circumference = 2 * pi * 30 = 188.5)
+    if (overallRingArc) {
+      const circumference = 188.5;
+      const offset = circumference - (Math.min(100, Math.max(0, overallPctVal)) / 100) * circumference;
+      overallRingArc.style.strokeDashoffset = String(offset.toFixed(1));
+      overallRingArc.style.stroke = overallPctVal >= targetPercentage ? 'var(--safe)' : 'var(--danger)';
+    }
+    if (overallRingLabel) {
+      overallRingLabel.textContent = `${Math.round(overallPctVal)}%`;
+    }
+    if (overallProgressFill) {
+      overallProgressFill.style.width = `${Math.min(100, overallPctVal)}%`;
+    }
 
     statAttended.textContent = totalAttended;
     statTotal.textContent = totalHeld;
     statMissed.textContent = Math.max(0, totalHeld - totalAttended);
 
-    // Drift banner check
     if (attendanceData.drift && attendanceData.drift.drifted) {
       if (popupDriftAlert) {
         popupDriftAlert.style.display = 'block';
         if (popupDriftSub) {
-          popupDriftSub.textContent = `${attendanceData.drift.reason || 'Page structure changed'} • Showing last known data`;
+          popupDriftSub.textContent = `${attendanceData.drift.reason || 'Page structure changed'} · Showing last known data`;
         }
       }
-    } else {
-      if (popupDriftAlert) popupDriftAlert.style.display = 'none';
+    } else if (popupDriftAlert) {
+      popupDriftAlert.style.display = 'none';
     }
 
     updateFreshnessText();
@@ -392,31 +407,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const filtered = (subjects || []).filter((s) => s.name.toLowerCase().includes(query));
 
     if (filtered.length === 0) {
-      subjectList.innerHTML = `<div style="text-align:center; padding:24px 16px; font-size:12px; color:var(--am-label-tertiary);">No matching courses</div>`;
+      subjectList.innerHTML = `<div style="text-align:center; padding:22px 14px; font-size:12px; color:var(--ink-muted);">No matching courses</div>`;
       return;
     }
+
+    const editSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
 
     subjectList.innerHTML = filtered.map((s) => {
       const math = window.BunkrMath || window.AttendMateMath;
       const status = math.getAttendanceStatus(s.attended, s.total, targetPercentage);
-      const manualTag = s.isManualOverride
-        ? `<span class="manual-tag">✏️ Manual</span><button class="reset-action-btn" data-subj="${s.name}" title="Reset to scraped values">Reset</button>`
-        : '';
+      const isEditing = editingSubjectName === s.name;
+      const manualTag = s.isManualOverride ? `<span class="manual-inline-tag">Manual</span>` : '';
+      const pctTone = s.percentage >= targetPercentage ? 'is-safe' : 'is-danger';
+
+      const inlineForm = isEditing ? `
+        <div class="inline-override-form" data-override-form="${escapeHtml(s.name)}">
+          <div class="inline-override-fields">
+            <label>Attended <input type="number" class="ov-att-input" min="0" max="300" value="${s.attended}"></label>
+            <label>Held total <input type="number" class="ov-tot-input" min="1" max="300" value="${s.total}"></label>
+          </div>
+          <div class="inline-override-error" style="display:none;"></div>
+          <div class="inline-override-actions">
+            ${s.isManualOverride ? `<button type="button" class="mini-action danger ov-reset-btn" data-subj="${escapeHtml(s.name)}">Reset</button>` : ''}
+            <button type="button" class="mini-action ov-cancel-btn">Cancel</button>
+            <button type="button" class="mini-action primary ov-save-btn" data-subj="${escapeHtml(s.name)}">Save</button>
+          </div>
+        </div>
+      ` : '';
+
       return `
         <div class="subject-item">
           <div class="subj-item-header">
-            <span class="subj-item-title" title="${s.name}">${s.name} ${manualTag}</span>
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span class="subj-item-pct">${s.percentage.toFixed(1)}%</span>
-              <button class="edit-action-btn" data-subj="${s.name}" data-att="${s.attended}" data-tot="${s.total}" title="Override attendance counts">✏️</button>
+            <span class="subj-item-title" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}${manualTag}</span>
+            <div class="subj-right-group">
+              <span class="subj-item-pct ${pctTone}">${s.percentage.toFixed(1)}%</span>
+              <button type="button" class="edit-action-btn" data-subj="${escapeHtml(s.name)}" aria-label="Edit attendance for ${escapeHtml(s.name)}" title="Override attendance counts">${editSvg}</button>
             </div>
           </div>
           <div class="subj-item-bottom">
-            <span>${s.attended} of ${s.total} classes</span>
-            <span class="status-pill ${status.type}" style="background:${status.bg}; color:${status.color};">
-              ${status.text}
-            </span>
+            <span class="mono">${s.attended}/${s.total} classes</span>
+            <span class="subj-status-inline ${status.type}">${escapeHtml(status.text)}</span>
           </div>
+          ${inlineForm}
         </div>
       `;
     }).join('');
@@ -425,35 +457,42 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const subjName = btn.getAttribute('data-subj');
-        const curAtt = btn.getAttribute('data-att');
-        const curTot = btn.getAttribute('data-tot');
-
-        const newAtt = prompt(`[Manual Override] Attended classes for:\n${subjName}`, curAtt);
-        if (newAtt === null) return;
-        const newTot = prompt(`[Manual Override] Total held classes for:\n${subjName}`, curTot);
-        if (newTot === null) return;
-
-        const attNum = parseInt(newAtt, 10);
-        const totNum = parseInt(newTot, 10);
-
-        if (isNaN(attNum) || isNaN(totNum) || totNum <= 0 || attNum < 0) {
-          alert('Please enter valid positive numbers.');
-          return;
-        }
-        if (attNum > totNum) {
-          alert('Attended classes cannot exceed total held classes.');
-          return;
-        }
-
-        saveManualOverride(subjName, attNum, totNum);
+        editingSubjectName = editingSubjectName === subjName ? null : subjName;
+        renderSubjectsList(subjects);
       });
     });
 
-    subjectList.querySelectorAll('.reset-action-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const subjName = btn.getAttribute('data-subj');
-        resetManualOverride(subjName);
+    subjectList.querySelectorAll('.ov-cancel-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        editingSubjectName = null;
+        renderSubjectsList(subjects);
+      });
+    });
+
+    subjectList.querySelectorAll('.ov-reset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        resetManualOverride(btn.getAttribute('data-subj'));
+      });
+    });
+
+    subjectList.querySelectorAll('.ov-save-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const form = btn.closest('.inline-override-form');
+        const attVal = parseInt(form.querySelector('.ov-att-input').value, 10);
+        const totVal = parseInt(form.querySelector('.ov-tot-input').value, 10);
+        const errEl = form.querySelector('.inline-override-error');
+
+        if (isNaN(attVal) || isNaN(totVal) || totVal <= 0 || attVal < 0) {
+          errEl.textContent = 'Enter valid positive numbers.';
+          errEl.style.display = 'block';
+          return;
+        }
+        if (attVal > totVal) {
+          errEl.textContent = 'Attended cannot exceed total held.';
+          errEl.style.display = 'block';
+          return;
+        }
+        saveManualOverride(btn.getAttribute('data-subj'), attVal, totVal);
       });
     });
   }
@@ -469,11 +508,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const semTitleEl = document.getElementById('forecast-sem-title');
     const semStatsEl = document.getElementById('forecast-sem-stats');
-    if (semTitleEl) semTitleEl.textContent = `${summary.semesterTitle} Ends: ${summary.endDateFormatted}`;
-    if (semStatsEl) semStatsEl.textContent = `${summary.teachingDaysLeft} teaching days remaining • ${summary.totalClassesLeft} scheduled classes`;
+    if (semTitleEl) semTitleEl.textContent = `${summary.semesterTitle} · Ends ${summary.endDateFormatted}`;
+    if (semStatsEl) semStatsEl.textContent = `${summary.teachingDaysLeft} teaching days · ${summary.totalClassesLeft} scheduled classes left`;
 
     if (!subjects || subjects.length === 0) {
-      forecastList.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:#94A3B8;">No courses to forecast yet.</div>`;
+      forecastList.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:var(--ink-muted);">No courses to forecast yet.</div>`;
       return;
     }
 
@@ -488,33 +527,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const canBunk = Math.max(0, remaining - mustAttend);
       const attainable = mustAttend <= remaining;
 
-      let badgeBg, badgeColor, badgeText;
+      let toneClass = 'is-safe';
+      let badgeText = '';
       if (attainable) {
         if (canBunk > 0) {
-          badgeBg = 'rgba(16, 185, 129, 0.15)';
-          badgeColor = '#34D399';
-          badgeText = `Can bunk ${canBunk} of ${remaining}`;
+          toneClass = 'is-safe';
+          badgeText = `Bunk ${canBunk} of ${remaining}`;
         } else {
-          badgeBg = 'rgba(245, 158, 11, 0.15)';
-          badgeColor = '#FBBF24';
-          badgeText = `Need all ${remaining} left`;
+          toneClass = 'is-warn';
+          badgeText = `Need all ${remaining}`;
         }
       } else {
         const maxPct = ((s.attended + remaining) / finalTotal) * 100;
-        badgeBg = 'rgba(239, 68, 68, 0.15)';
-        badgeColor = '#F87171';
-        badgeText = `Deficit (Max: ${maxPct.toFixed(1)}%)`;
+        toneClass = 'is-danger';
+        badgeText = `Max ${maxPct.toFixed(1)}%`;
       }
 
       return `
         <div class="subject-item">
           <div class="subj-item-header">
-            <span class="subj-item-title" title="${s.name}">${s.name}</span>
-            <span class="subj-item-pct" style="color:${badgeColor}; font-size:11px;">${badgeText}</span>
+            <span class="subj-item-title" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
+            <span class="subj-item-pct ${toneClass}" style="font-size:11.5px; white-space:nowrap; flex-shrink:0;">${badgeText}</span>
           </div>
           <div class="subj-item-bottom">
-            <span>${remaining} classes left till ${summary.endDateFormatted}</span>
-            <span style="font-size:11px; color:#94A3B8;">Must attend: ${mustAttend}</span>
+            <span class="mono">${remaining} left till ${summary.endDateFormatted}</span>
+            <span class="mono">Attend ${mustAttend}</span>
           </div>
         </div>
       `;
@@ -523,9 +560,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function populateSimulatorSelect(subjects) {
     simSubjectSelect.innerHTML = `
-      <option value="all">🌟 Overall (All Courses)</option>
+      <option value="all">Overall (All Courses)</option>
       ${(subjects || []).map((s) => `
-        <option value="${s.id || s.name}">${s.name} (${s.percentage.toFixed(1)}%)</option>
+        <option value="${escapeHtml(s.id || s.name)}">${escapeHtml(s.name)} (${s.percentage.toFixed(1)}%)</option>
       `).join('')}
     `;
     simSubjectSelect.value = simSubjectId;
@@ -534,17 +571,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateSimulation() {
     if (!attendanceData) return;
 
-    let curAttended, curTotal;
+    let curAttended = 0;
+    let curTotal = 0;
     const effectiveSubjects = applyOverridesToSubjects(attendanceData.subjects || []);
 
     if (simSubjectId === 'all') {
-      let totAtt = 0, totHeld = 0;
       effectiveSubjects.forEach((s) => {
-        totAtt += s.attended;
-        totHeld += s.total;
+        curAttended += s.attended;
+        curTotal += s.total;
       });
-      curAttended = totAtt;
-      curTotal = totHeld;
     } else {
       const subj = effectiveSubjects.find((s) => (s.id || s.name) === simSubjectId) || effectiveSubjects[0];
       curAttended = subj ? subj.attended : 0;
@@ -557,35 +592,38 @@ document.addEventListener('DOMContentLoaded', () => {
       marked: curTotal,
       willAttend: simAttend,
       willBunk: simBunk,
-      targetPercentage: targetPercentage
+      targetPercentage
     });
 
     simValAttend.textContent = simAttend;
     simValBunk.textContent = simBunk;
 
     simProjectedPct.textContent = `${sim.projectedPercentage.toFixed(1)}%`;
-    simProjectedPct.style.color = sim.isAboveTarget ? '#10B981' : '#EF4444';
+    simProjectedPct.className = `sim-result-value mono ${sim.isAboveTarget ? 'is-safe' : 'is-danger'}`;
 
     const deltaSign = sim.percentageDelta >= 0 ? '+' : '';
     simDeltaBadge.textContent = `${deltaSign}${sim.percentageDelta.toFixed(1)}%`;
-    simDeltaBadge.style.background = sim.percentageDelta >= 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
-    simDeltaBadge.style.color = sim.percentageDelta >= 0 ? '#10B981' : '#EF4444';
+    simDeltaBadge.className = `sim-result-delta mono ${sim.percentageDelta >= 0 ? 'is-safe' : 'is-danger'}`;
 
     if (sim.newBunkable > 0) {
-      simAdviceText.innerHTML = `🎉 Can safely bunk <strong>${sim.newBunkable}</strong> more classes!`;
+      simAdviceText.innerHTML = `Safe to bunk <strong>${sim.newBunkable}</strong> more class${sim.newBunkable === 1 ? '' : 'es'}.`;
     } else if (sim.newNeeded > 0) {
-      simAdviceText.innerHTML = `⚠️ Must attend <strong>${sim.newNeeded}</strong> classes to recover target.`;
+      simAdviceText.innerHTML = `Attend next <strong>${sim.newNeeded}</strong> class${sim.newNeeded === 1 ? '' : 'es'} to recover ${targetPercentage}%.`;
     } else {
-      simAdviceText.innerHTML = `⚖️ Exactly on track.`;
+      simAdviceText.textContent = `Right on the ${targetPercentage}% threshold.`;
     }
   }
 
   function setupTabs() {
     document.querySelectorAll('.tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach((b) => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
         document.querySelectorAll('.tab-pane').forEach((p) => p.classList.remove('active'));
         btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
         document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
       });
     });
@@ -631,26 +669,10 @@ document.addEventListener('DOMContentLoaded', () => {
       simSubjectId = simSubjectSelect.value;
       updateSimulation();
     });
-
-    document.getElementById('sim-inc-attend').addEventListener('click', () => {
-      simAttend++;
-      updateSimulation();
-    });
-
-    document.getElementById('sim-dec-attend').addEventListener('click', () => {
-      simAttend = Math.max(0, simAttend - 1);
-      updateSimulation();
-    });
-
-    document.getElementById('sim-inc-bunk').addEventListener('click', () => {
-      simBunk++;
-      updateSimulation();
-    });
-
-    document.getElementById('sim-dec-bunk').addEventListener('click', () => {
-      simBunk = Math.max(0, simBunk - 1);
-      updateSimulation();
-    });
+    document.getElementById('sim-inc-attend').addEventListener('click', () => { simAttend++; updateSimulation(); });
+    document.getElementById('sim-dec-attend').addEventListener('click', () => { simAttend = Math.max(0, simAttend - 1); updateSimulation(); });
+    document.getElementById('sim-inc-bunk').addEventListener('click', () => { simBunk++; updateSimulation(); });
+    document.getElementById('sim-dec-bunk').addEventListener('click', () => { simBunk = Math.max(0, simBunk - 1); updateSimulation(); });
   }
 
   function setupTripSimulatorControls() {
@@ -714,16 +736,16 @@ document.addEventListener('DOMContentLoaded', () => {
     verdictEl.textContent = `${plan.verdict} (${plan.overallBeforePct.toFixed(1)}% → ${plan.overallAfterPct.toFixed(1)}%, -${plan.totalMissedSessions} cls)`;
 
     if (plan.affectedCourses.length === 0) {
-      listEl.innerHTML = `<div class="popup-trip-row"><span>No scheduled classes in range</span><strong>0 missed</strong></div>`;
+      listEl.innerHTML = `<div class="popup-trip-row"><span>No scheduled classes in range</span><strong class="mono">0 missed</strong></div>`;
       return;
     }
 
     listEl.innerHTML = plan.affectedCourses.map((c) => {
-      const color = c.safeAfter ? '#10B981' : '#EF4444';
+      const tone = c.safeAfter ? 'is-safe' : 'is-danger';
       return `
         <div class="popup-trip-row">
-          <span><strong>${c.acronym}</strong> (-${c.missed})</span>
-          <span style="color:${color}; font-weight:700;">${c.beforePct.toFixed(0)}% → ${c.afterPct.toFixed(1)}%</span>
+          <span><strong>${escapeHtml(c.acronym)}</strong> <span class="mono">(-${c.missed})</span></span>
+          <span class="mono ${tone}" style="font-weight:700;">${c.beforePct.toFixed(0)}% → ${c.afterPct.toFixed(1)}%</span>
         </div>
       `;
     }).join('');
@@ -737,13 +759,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const nowMs = Date.now();
     const horizonMs = 48 * 3600000;
-    let list = Array.isArray(storedAssignments) ? storedAssignments : [];
+    const list = Array.isArray(storedAssignments) ? storedAssignments : [];
     let urgent = list
       .filter((a) => a && a.dueAt && !a.submitted)
-      .map((a) => ({
-        title: a.title || a.name || 'Assignment',
-        dueMs: new Date(a.dueAt).getTime()
-      }))
+      .map((a) => ({ title: a.title || a.name || 'Assignment', dueMs: new Date(a.dueAt).getTime() }))
       .filter((a) => !isNaN(a.dueMs) && a.dueMs >= nowMs && a.dueMs <= nowMs + horizonMs)
       .sort((a, b) => a.dueMs - b.dueMs)
       .slice(0, 3);
@@ -761,10 +780,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     strip.style.display = 'block';
-    badge.textContent = String(urgent.length);
+    badge.textContent = `${urgent.length} due`;
     itemsEl.innerHTML = urgent.map((u) => {
       const hrs = Math.max(1, Math.round((u.dueMs - nowMs) / 3600000));
-      return `<div class="popup-deadline-row"><span>${u.title}</span><small>in ${hrs}h</small></div>`;
+      return `<div class="popup-deadline-row"><span>${escapeHtml(u.title)}</span><small>in ${hrs}h</small></div>`;
     }).join('');
   }
 
@@ -791,9 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
       openDrawerBtn.addEventListener('click', () => {
         if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
           chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0]?.id) {
-              chrome.tabs.sendMessage(tabs[0].id, { type: 'OPEN_DRAWER' });
-            }
+            if (tabs[0]?.id) chrome.tabs.sendMessage(tabs[0].id, { type: 'OPEN_DRAWER' });
           });
         } else {
           window.location.href = '../demo/rishiverse_cards_demo.html';
@@ -813,7 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (d.cachedAttendance) {
                       attendanceData = d.cachedAttendance;
                       lastSyncTimestamp = d.lastSync || d.cachedAttendance.timestamp;
-                      connectionStatus.textContent = 'Synced Just Now';
+                      connectionStatus.textContent = 'Synced just now';
                       renderAll();
                     }
                   });
@@ -823,54 +840,34 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         } else {
           lastSyncTimestamp = Date.now();
-          connectionStatus.textContent = '🟢 Preview Synced';
+          connectionStatus.textContent = 'Preview Synced';
           renderAll();
         }
       });
     }
 
-    // One-Click Diagnostics
     if (diagBtn) {
       diagBtn.addEventListener('click', () => {
         const now = new Date();
         const effectiveSubjects = attendanceData?.subjects ? applyOverridesToSubjects(attendanceData.subjects) : [];
-        const overrideKeys = Object.keys(manualOverrides);
-
-        let diag = `### Bunkr Diagnostics (v2.4.1)\n`;
-        diag += `- **Generated**: ${now.toISOString()} (${now.toLocaleTimeString()})\n`;
-        diag += `- **Active Portal**: ${activePortalName}\n`;
-        diag += `- **Last Sync**: ${lastSyncTimestamp ? new Date(lastSyncTimestamp).toISOString() : 'Never'}\n`;
-        diag += `- **Freshness**: ${formatFreshness(lastSyncTimestamp, activePortalName)}\n`;
-        diag += `- **Scrape Status**: ${attendanceData?.drift?.drifted ? `⚠️ Drift Alert (${attendanceData.drift.reason})` : '✅ Clean Scrape'}\n`;
-        diag += `- **Nudge System**: ${nudgesEnabled ? `Enabled (${nudgeLeadMinutes}m lead time)` : 'Disabled'}\n`;
-        diag += `- **Target Attendance**: ${targetPercentage}%\n`;
-        diag += `- **Active Overrides**: ${overrideKeys.length} courses overridden\n\n`;
-
-        diag += `#### Tracked Courses\n`;
-        if (effectiveSubjects.length === 0) {
-          diag += `*No courses currently tracked.*\n`;
-        } else {
-          effectiveSubjects.forEach((s, idx) => {
-            const tag = s.isManualOverride ? `[MANUAL OVERRIDE: was ${s.scrapedAttended}/${s.scrapedTotal}]` : `[SCRAPED]`;
-            diag += `${idx + 1}. **${s.name}**: ${s.attended}/${s.total} (${s.percentage.toFixed(1)}%) ${tag}\n`;
-          });
-        }
-
-        navigator.clipboard.writeText(diag).then(() => {
-          const orig = diagBtn.innerHTML;
-          diagBtn.innerHTML = '✅ Copied!';
-          diagBtn.style.color = '#10B981';
-          setTimeout(() => {
-            diagBtn.innerHTML = orig;
-            diagBtn.style.color = '';
-          }, 2000);
-        }).catch(() => {
-          prompt('Diagnostics (Copy below):', diag);
+        let diag = `### Bunkr Diagnostics (v2.4.2)\n`;
+        diag += `- Generated: ${now.toISOString()}\n`;
+        diag += `- Active Portal: ${activePortalName}\n`;
+        diag += `- Freshness: ${formatFreshness(lastSyncTimestamp, activePortalName)}\n`;
+        diag += `- Target: ${targetPercentage}%\n\n`;
+        effectiveSubjects.forEach((s, idx) => {
+          diag += `${idx + 1}. ${s.name}: ${s.attended}/${s.total} (${s.percentage.toFixed(1)}%)\n`;
         });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(diag).then(() => {
+            const orig = diagBtn.textContent;
+            diagBtn.textContent = 'Copied';
+            setTimeout(() => { diagBtn.textContent = orig; }, 1600);
+          }).catch(() => {});
+        }
       });
     }
 
-    // Phase 3: Copy Status for WhatsApp
     const copyStatusBtn = document.getElementById('popup-copy-status-btn');
     if (copyStatusBtn) {
       copyStatusBtn.addEventListener('click', () => {
@@ -887,41 +884,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(shareText).then(() => {
-            const orig = copyStatusBtn.innerHTML;
-            copyStatusBtn.innerHTML = '✓ Copied to Clipboard!';
-            copyStatusBtn.style.background = '#047857';
-            setTimeout(() => {
-              copyStatusBtn.innerHTML = orig;
-              copyStatusBtn.style.background = '#059669';
-            }, 2000);
-          }).catch(() => {
-            prompt('Copy WhatsApp Attendance Status:', shareText);
-          });
-        } else {
-          prompt('Copy WhatsApp Attendance Status:', shareText);
+            const orig = copyStatusBtn.textContent;
+            copyStatusBtn.textContent = 'Copied Status';
+            setTimeout(() => { copyStatusBtn.textContent = orig; }, 1800);
+          }).catch(() => {});
         }
       });
     }
 
-    // Export Backup
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
         const backupData = {
-          bunkr_backup_version: '2.4.1',
-          attendmate_backup_version: '2.4.1',
+          bunkr_backup_version: '2.4.2',
           exported_at: new Date().toISOString(),
           targetPercentage,
           manualOverrides,
           cachedAttendance: attendanceData,
           lastSync: lastSyncTimestamp,
           nudgesEnabled,
-          nudgeLeadMinutes,
-          settings: {
-            autoInject: true,
-            theme: 'system'
-          }
+          nudgeLeadMinutes
         };
-
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -932,81 +914,45 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Restore Backup
     if (restoreBtn && restoreFileInput) {
-      restoreBtn.addEventListener('click', () => {
-        restoreFileInput.click();
-      });
-
+      restoreBtn.addEventListener('click', () => restoreFileInput.click());
       restoreFileInput.addEventListener('change', (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (event) => {
           try {
             const data = JSON.parse(event.target.result);
-            if (!data || typeof data !== 'object') throw new Error('Invalid JSON format');
-
-            if (data.targetPercentage) {
-              targetPercentage = parseFloat(data.targetPercentage) || 75;
-              updateTargetUI();
-            }
-
+            if (!data || typeof data !== 'object') throw new Error('Invalid JSON');
+            if (data.targetPercentage) { targetPercentage = parseFloat(data.targetPercentage) || 75; updateTargetUI(); }
             if (data.manualOverrides && typeof data.manualOverrides === 'object') {
               manualOverrides = data.manualOverrides;
               localStorage.setItem('bunkr_manual_overrides', JSON.stringify(manualOverrides));
-              localStorage.setItem('attendmate_manual_overrides', JSON.stringify(manualOverrides));
             }
-
             if (data.nudgesEnabled !== undefined) {
               nudgesEnabled = Boolean(data.nudgesEnabled);
               if (popupNudgeToggle) popupNudgeToggle.checked = nudgesEnabled;
             }
-
-            if (data.nudgeLeadMinutes) {
-              nudgeLeadMinutes = parseInt(data.nudgeLeadMinutes, 10) || 10;
-              updateLeadUI();
-            }
-
-            if (data.cachedAttendance) {
-              attendanceData = data.cachedAttendance;
-            }
-
-            if (data.lastSync) {
-              lastSyncTimestamp = data.lastSync;
-            }
+            if (data.nudgeLeadMinutes) { nudgeLeadMinutes = parseInt(data.nudgeLeadMinutes, 10) || 10; updateLeadUI(); }
+            if (data.cachedAttendance) attendanceData = data.cachedAttendance;
+            if (data.lastSync) lastSyncTimestamp = data.lastSync;
 
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-              chrome.storage.local.set({
-                targetPercentage,
-                manualOverrides,
-                cachedAttendance: attendanceData,
-                lastSync: lastSyncTimestamp,
-                nudgesEnabled,
-                nudgeLeadMinutes
-              });
+              chrome.storage.local.set({ targetPercentage, manualOverrides, cachedAttendance: attendanceData, lastSync: lastSyncTimestamp, nudgesEnabled, nudgeLeadMinutes });
             }
-
             renderAll();
             notifyTabsOfOverride();
-
-            const orig = restoreBtn.innerHTML;
-            restoreBtn.innerHTML = '✅ Restored!';
-            restoreBtn.style.color = '#10B981';
-            setTimeout(() => {
-              restoreBtn.innerHTML = orig;
-              restoreBtn.style.color = '';
-            }, 2000);
+            const orig = restoreBtn.textContent;
+            restoreBtn.textContent = 'Restored';
+            setTimeout(() => { restoreBtn.textContent = orig; }, 1600);
           } catch (err) {
-            alert('Failed to restore backup: ' + err.message);
+            if (connectionStatus) connectionStatus.textContent = 'Invalid backup file';
           }
         };
         reader.readAsText(file);
       });
     }
 
-    // Google Calendar 10m Alert Bar
     const calSyncBtn = document.getElementById('cal-sync-btn');
     if (calSyncBtn) {
       calSyncBtn.addEventListener('click', () => {
@@ -1019,20 +965,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(a);
         a.click();
         a.remove();
+        const orig = calSyncBtn.textContent;
+        calSyncBtn.textContent = 'Downloaded .ics';
+        setTimeout(() => { calSyncBtn.textContent = orig; }, 1800);
+      });
+    }
 
-        const origText = calSyncBtn.innerHTML;
-        calSyncBtn.innerHTML = '✅ Downloaded .ics (10m Alerts)';
-        setTimeout(() => {
-          calSyncBtn.innerHTML = origText;
-        }, 1800);
+    const scheduleBtn = document.getElementById('popup-schedule-btn');
+    if (scheduleBtn) {
+      scheduleBtn.addEventListener('click', () => {
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.runtime) {
+          chrome.tabs.create({ url: chrome.runtime.getURL('newtab/newtab.html?modal=schedule') });
+        } else {
+          window.location.href = '../newtab/newtab.html?modal=schedule';
+        }
       });
     }
   }
 
   function updateLeadUI() {
     popupLeadBtns.forEach((btn) => {
-      const lead = parseInt(btn.getAttribute('data-lead'), 10);
-      btn.classList.toggle('active', lead === nudgeLeadMinutes);
+      btn.classList.toggle('active', parseInt(btn.getAttribute('data-lead'), 10) === nudgeLeadMinutes);
     });
   }
 
@@ -1044,7 +997,6 @@ document.addEventListener('DOMContentLoaded', () => {
           chrome.storage.local.set({ nudgesEnabled });
         }
         localStorage.setItem('bunkr_nudges_enabled', nudgesEnabled ? 'true' : 'false');
-        localStorage.setItem('attendmate_nudges_enabled', nudgesEnabled ? 'true' : 'false');
       });
     }
 
@@ -1056,27 +1008,20 @@ document.addEventListener('DOMContentLoaded', () => {
           chrome.storage.local.set({ nudgeLeadMinutes });
         }
         localStorage.setItem('bunkr_nudge_lead_minutes', String(nudgeLeadMinutes));
-        localStorage.setItem('attendmate_nudge_lead_minutes', String(nudgeLeadMinutes));
       });
     });
 
     if (popupTestNudgeBtn) {
       popupTestNudgeBtn.addEventListener('click', () => {
+        const showSent = () => {
+          const orig = popupTestNudgeBtn.textContent;
+          popupTestNudgeBtn.textContent = 'Test Nudge Sent';
+          setTimeout(() => { popupTestNudgeBtn.textContent = orig; }, 1800);
+        };
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-          chrome.runtime.sendMessage({
-            type: 'TEST_NUDGE',
-            course: 'PSP',
-            time: '13:30',
-            room: 'A603'
-          }, (res) => {
-            const orig = popupTestNudgeBtn.innerHTML;
-            popupTestNudgeBtn.innerHTML = '✅ Nudge Sent!';
-            popupTestNudgeBtn.style.color = '#10B981';
-            setTimeout(() => {
-              popupTestNudgeBtn.innerHTML = orig;
-              popupTestNudgeBtn.style.color = '';
-            }, 2000);
-          });
+          chrome.runtime.sendMessage({ type: 'TEST_NUDGE', course: 'PSP', time: '13:30', room: 'A603' }, showSent);
+        } else {
+          showSent();
         }
       });
     }
@@ -1086,94 +1031,67 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!popupTodayClasses) return;
     const now = new Date();
     const engine = window.BunkrEngine || window.AttendMateEngine;
-
-    if (!engine) {
-      popupTodayClasses.innerHTML = `<div style="text-align:center; padding:12px; color:#94A3B8; font-size:11px;">Timetable loading...</div>`;
-      return;
-    }
+    if (!engine) return;
 
     if (engine.isDateInDiwaliBreak(now)) {
-      popupTodayClasses.innerHTML = `<div style="text-align:center; padding:12px; color:#F59E0B; font-size:11px;">🌴 Diwali Break (Nov 6–13) &bull; No classes</div>`;
+      popupTodayClasses.innerHTML = `<div style="text-align:center; padding:12px; color:var(--warn); font-size:11.5px;">Diwali Break · No classes</div>`;
       return;
     }
 
     const activeTt = engine.getActiveTimetable ? engine.getActiveTimetable() : null;
-    const hasSat = activeTt && activeTt.SLOTS && Object.values(activeTt.SLOTS).some(s => Array.isArray(s.slots) && s.slots.some(sl => sl.day === 6));
+    const hasSat = activeTt && activeTt.SLOTS && Object.values(activeTt.SLOTS).some((s) => Array.isArray(s.slots) && s.slots.some((sl) => sl.day === 6));
     if (now.getDay() === 0 || (!hasSat && now.getDay() === 6)) {
-      popupTodayClasses.innerHTML = `<div style="text-align:center; padding:12px; color:#94A3B8; font-size:11px;">Weekend &bull; Zero scheduled classes</div>`;
+      popupTodayClasses.innerHTML = `<div style="text-align:center; padding:12px; color:var(--ink-muted); font-size:11.5px;">Weekend · Zero scheduled classes</div>`;
       return;
     }
 
     const classesToday = engine.getTodaysClasses(now);
     if (classesToday.length === 0) {
-      popupTodayClasses.innerHTML = `<div style="text-align:center; padding:12px; color:#94A3B8; font-size:11px;">No classes scheduled for today.</div>`;
+      popupTodayClasses.innerHTML = `<div style="text-align:center; padding:12px; color:var(--ink-muted); font-size:11.5px;">No classes scheduled today.</div>`;
       return;
     }
 
-    popupTodayClasses.innerHTML = classesToday.map((c) => {
-      return `
-        <div class="subject-item" style="padding: 7px 10px; margin-bottom: 5px;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <strong style="color: #60A5FA; font-size: 12px; margin-right: 6px;">${c.time}</strong>
-              <span style="font-weight: 600; font-size: 12px; color: #F1F5F9;">${c.acronym}</span>
-            </div>
-            <span style="font-size: 11px; background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; color: #94A3B8;">${c.room || 'Room TBA'}</span>
-          </div>
+    popupTodayClasses.innerHTML = classesToday.map((c) => `
+      <div class="subject-item" style="padding:7px 10px;">
+        <div class="subj-item-header" style="margin-bottom:0;">
+          <span class="subj-item-title">${escapeHtml(c.subjectName || c.name || c.acronym || 'Class')}</span>
+          <span class="mono" style="font-size:11px; color:var(--accent); font-weight:700; white-space:nowrap; flex-shrink:0;">${escapeHtml(c.time)} · ${escapeHtml(c.room)}</span>
         </div>
-      `;
-    }).join('');
+      </div>
+    `).join('');
   }
 
-  function renderPopupProjection(effectiveSubjects) {
+  function renderPopupProjection(subjects) {
     const engine = window.BunkrEngine || window.AttendMateEngine;
-    if (!engine) return;
+    if (!engine || typeof engine.calculateSemesterProjection !== 'function' || !subjects || subjects.length === 0) return;
 
-    const isStale = Boolean(attendanceData?.drift?.drifted);
-    const proj = engine.calculateSemesterProjection(effectiveSubjects, {
+    const proj = engine.calculateSemesterProjection(subjects, {
       now: new Date(),
       targetPercentage,
       overrides: manualOverrides,
       drift: attendanceData?.drift,
-      isStale
+      isStale: Boolean(attendanceData?.drift?.drifted)
     });
-
     const paceEl = document.getElementById('popup-proj-pace');
     const maxEl = document.getElementById('popup-proj-max');
     const remEl = document.getElementById('popup-proj-rem');
+    const coachEl = document.getElementById('popup-coach-pill');
     const staleTag = document.getElementById('popup-proj-stale-tag');
-    const coachPill = document.getElementById('popup-coach-pill');
 
     if (paceEl) paceEl.textContent = `${proj.overallPacePct.toFixed(1)}%`;
     if (maxEl) maxEl.textContent = `${proj.overallMaxPct.toFixed(1)}%`;
-    if (remEl) remEl.textContent = `${proj.totalRemainingSessions}`;
+    if (remEl) remEl.textContent = String(proj.totalRemainingSessions);
+    if (staleTag) staleTag.style.display = proj.isStale ? 'inline' : 'none';
 
-    if (staleTag) {
-      staleTag.style.display = proj.isStale ? 'inline-block' : 'none';
-    }
-
-    if (coachPill) {
-      if (proj.atRiskCourses.length === 0) {
-        coachPill.textContent = 'Silence (Healthy)';
-        coachPill.className = 'popup-coach-pill';
-        coachPill.title = proj.coachHealthySummary;
+    if (coachEl) {
+      const riskCount = Array.isArray(proj.atRiskCourses) ? proj.atRiskCourses.length : 0;
+      if (riskCount === 0) {
+        coachEl.textContent = 'Healthy standing';
+        coachEl.className = 'popup-coach-text';
       } else {
-        coachPill.textContent = `${proj.atRiskCourses.length} below target`;
-        coachPill.className = 'popup-coach-pill warning';
-        coachPill.title = proj.atRiskCourses.map((c) => `${c.acronym}: ${c.callout}`).join('\n');
+        coachEl.textContent = `${riskCount} below target`;
+        coachEl.className = 'popup-coach-text warning';
       }
     }
-  }
-
-  // Open Command Center Schedule Customizer
-  const popupScheduleBtn = document.getElementById('popup-schedule-btn');
-  if (popupScheduleBtn) {
-    popupScheduleBtn.addEventListener('click', () => {
-      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
-        chrome.tabs.create({ url: chrome.runtime.getURL('newtab/newtab.html?modal=schedule') });
-      } else {
-        window.location.href = '../newtab/newtab.html?modal=schedule';
-      }
-    });
   }
 });

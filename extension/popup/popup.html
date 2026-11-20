@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bunkr 2.0</title>
+  <title>Bunkr — Extension Popup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -11,104 +14,113 @@
     <!-- Header -->
     <header class="header">
       <div class="brand">
-        <img src="../icons/icon32.png" alt="Logo" class="logo">
+        <img src="../icons/icon32.png" alt="Bunkr" class="logo">
         <div>
-          <h1 class="title">Bunkr <small style="font-size:11px; font-weight:normal; opacity:0.6;">v2.4.2</small></h1>
+          <h1 class="title">Bunkr</h1>
           <span class="subtitle" id="connection-status">Connecting...</span>
         </div>
       </div>
-      <div style="display: flex; gap: 4px;">
-        <button id="open-cc-btn" class="icon-btn" title="Open College Command Center Dashboard">📊</button>
-        <button id="open-drawer-btn" class="icon-btn" title="Open Side Drawer on Page">↗</button>
+      <div class="header-actions">
+        <button type="button" id="popup-theme-btn" class="icon-btn" title="Toggle Obsidian / Daylight theme" aria-label="Toggle appearance theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" id="open-cc-btn" class="icon-btn" title="Open Command Center Dashboard" aria-label="Open Command Center Dashboard">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        </button>
+        <button type="button" id="open-drawer-btn" class="icon-btn" title="Open Rishiverse Live View" aria-label="Open Rishiverse Live View">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg>
+        </button>
       </div>
     </header>
 
-    <!-- Drift Alert (Visible only when scrape drift is detected) -->
+    <!-- Drift Alert -->
     <div id="popup-drift-alert" class="drift-alert" style="display: none;">
-      ⚠️ <strong>The ERP page may have changed — showing last known data</strong>
-      <div id="popup-drift-sub" style="font-size: 10.5px; opacity: 0.85; margin-top: 2px;"></div>
+      <strong>ERP layout changed — showing last known data</strong>
+      <div id="popup-drift-sub" class="drift-sub"></div>
     </div>
 
-    <!-- Overall Summary -->
-    <div class="summary-card" id="summary-card">
-      <div class="summary-top">
-        <div>
-          <div class="summary-pct" id="overall-pct">--%</div>
-          <div class="summary-sub">Overall Attendance</div>
+    <!-- Hero Attendance Summary Card -->
+    <section class="summary-card" id="summary-card">
+      <div class="summary-hero-row">
+        <div class="ring-wrap" aria-hidden="true">
+          <svg class="ring-svg" viewBox="0 0 72 72">
+            <circle class="ring-track" cx="36" cy="36" r="30" />
+            <circle class="ring-value" id="overall-ring-arc" cx="36" cy="36" r="30" stroke-dasharray="188.5" stroke-dashoffset="188.5" />
+          </svg>
+          <span class="ring-center mono" id="overall-ring-label">--</span>
         </div>
-        <div class="status-pill" id="overall-status-pill">--</div>
+
+        <div class="summary-info">
+          <div class="summary-pct-row">
+            <div class="summary-pct mono" id="overall-pct">--%</div>
+          </div>
+          <div class="summary-status-text" id="overall-status-pill">Loading standing...</div>
+          <div class="target-row">
+            <span class="target-caption">Target <strong id="target-label">75%</strong></span>
+            <div class="target-pills" role="group" aria-label="Target attendance">
+              <button type="button" class="target-btn active" data-target="75">75%</button>
+              <button type="button" class="target-btn" data-target="80">80%</button>
+              <button type="button" class="target-btn" data-target="85">85%</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="progress-bar">
-        <div class="progress-fill" id="overall-progress-fill"></div>
-      </div>
-
-      <div class="target-row">
-        <span>Target: <strong id="target-label">75%</strong></span>
-        <div class="target-pills">
-          <button class="target-btn active" data-target="75">75%</button>
-          <button class="target-btn" data-target="80">80%</button>
-          <button class="target-btn" data-target="85">85%</button>
-        </div>
-      </div>
+      <div class="progress-bar" style="display:none;"><div class="progress-fill" id="overall-progress-fill"></div></div>
 
       <div class="stat-counts">
-        <div><span id="stat-attended">0</span><small>Attended</small></div>
-        <div><span id="stat-total">0</span><small>Conducted</small></div>
-        <div><span id="stat-missed">0</span><small>Missed</small></div>
+        <div><span id="stat-attended" class="mono">0</span><small>Attended</small></div>
+        <div><span id="stat-total" class="mono">0</span><small>Conducted</small></div>
+        <div><span id="stat-missed" class="mono">0</span><small>Missed</small></div>
       </div>
 
-      <!-- Compact Semester Projection Row (Phase 3) -->
+      <!-- Compact Semester Projection Row -->
       <div class="popup-proj-box" id="popup-proj-box">
         <div class="popup-proj-top">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em;">Semester Projection</span>
-            <span id="popup-proj-stale-tag" class="popup-stale-pill" style="display: none;">Last Known</span>
+          <div class="proj-label-row">
+            <span class="proj-kicker">Semester Projection</span>
+            <span id="popup-proj-stale-tag" class="popup-stale-tag" style="display: none;">Last known</span>
           </div>
-          <span id="popup-coach-pill" class="popup-coach-pill">Silence (Healthy)</span>
+          <span id="popup-coach-pill" class="popup-coach-text">Healthy</span>
         </div>
-        <div class="popup-proj-stats">
-          <span>Pace: <strong id="popup-proj-pace" style="color: #60A5FA;">--%</strong></span>
-          <span style="color: rgba(255,255,255,0.2);">&bull;</span>
-          <span>Max: <strong id="popup-proj-max" style="color: #34D399;">--%</strong></span>
-          <span style="color: rgba(255,255,255,0.2);">&bull;</span>
-          <span><span id="popup-proj-rem">--</span> left</span>
+        <div class="popup-proj-stats mono">
+          <span>Pace <strong id="popup-proj-pace">--%</strong></span>
+          <span class="dot-sep" aria-hidden="true">·</span>
+          <span>Max <strong id="popup-proj-max">--%</strong></span>
+          <span class="dot-sep" aria-hidden="true">·</span>
+          <span><strong id="popup-proj-rem">--</strong> left</span>
         </div>
       </div>
 
-      <div id="popup-freshness" class="freshness-subtext">🕒 Synced just now</div>
-    </div>
+      <div id="popup-freshness" class="freshness-subtext">Synced just now</div>
+    </section>
 
     <!-- Navigation Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="bunk-tab">Bunk Meter</button>
-      <button class="tab-btn" data-tab="forecast-tab">Forecast</button>
-      <button class="tab-btn" data-tab="sim-tab">What-If</button>
-      <button class="tab-btn" data-tab="nudges-tab" id="nudges-tab-btn">Class Nudges</button>
+    <div class="tabs" role="tablist" aria-label="Popup views">
+      <button type="button" class="tab-btn active" data-tab="bunk-tab" role="tab" aria-selected="true">Bunk Meter</button>
+      <button type="button" class="tab-btn" data-tab="forecast-tab" role="tab" aria-selected="false">Forecast</button>
+      <button type="button" class="tab-btn" data-tab="sim-tab" role="tab" aria-selected="false">What-If</button>
+      <button type="button" class="tab-btn" data-tab="nudges-tab" id="nudges-tab-btn" role="tab" aria-selected="false">Nudges</button>
     </div>
 
     <!-- Tab 1: Bunk Meter -->
     <div id="bunk-tab" class="tab-pane active">
       <div class="search-box">
-        <input type="text" id="search-input" placeholder="Filter courses...">
+        <input type="text" id="search-input" placeholder="Filter courses..." aria-label="Filter courses">
       </div>
-      <div id="subject-list" class="subject-list">
-        <!-- Rendered dynamically -->
-      </div>
+      <div id="subject-list" class="subject-list"></div>
     </div>
 
-    <!-- Tab: Semester Forecast -->
+    <!-- Tab 2: Semester Forecast -->
     <div id="forecast-tab" class="tab-pane">
-      <div style="background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.3); border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px;">
-        <div id="forecast-sem-title" style="font-weight:700; color:#C4B5FD;">Loading semester dates...</div>
-        <div id="forecast-sem-stats" style="color:#94A3B8; margin-top:2px;">Calculating remaining teaching days...</div>
+      <div class="forecast-banner">
+        <div id="forecast-sem-title" class="forecast-banner-title">Loading semester dates...</div>
+        <div id="forecast-sem-stats" class="forecast-banner-sub mono">Calculating remaining teaching days...</div>
       </div>
-      <div id="forecast-list" class="subject-list">
-        <!-- Rendered dynamically -->
-      </div>
+      <div id="forecast-list" class="subject-list"></div>
     </div>
 
-    <!-- Tab 2: What-If Simulator -->
+    <!-- Tab 3: What-If Simulator -->
     <div id="sim-tab" class="tab-pane">
       <div class="sim-mode-toggle" role="tablist" aria-label="Simulator mode">
         <button type="button" class="sim-mode-btn active" data-sim-mode="classes" id="sim-mode-classes-btn">By Classes</button>
@@ -116,34 +128,36 @@
       </div>
 
       <div class="sim-container" id="sim-classes-pane">
-        <label class="form-label" for="sim-subject-select">Select Course:</label>
+        <label class="field-caption" for="sim-subject-select">Course scope</label>
         <select id="sim-subject-select" class="select-input">
           <option value="all">Overall (All Courses)</option>
         </select>
 
         <div class="stepper">
-          <span>Attend Next:</span>
+          <span>Attend next</span>
           <div class="stepper-controls">
-            <button type="button" id="sim-dec-attend" class="step-btn" aria-label="Decrease attend count">-</button>
-            <span id="sim-val-attend" class="step-num">0</span>
+            <button type="button" id="sim-dec-attend" class="step-btn" aria-label="Decrease attend count">−</button>
+            <span id="sim-val-attend" class="step-num mono">0</span>
             <button type="button" id="sim-inc-attend" class="step-btn" aria-label="Increase attend count">+</button>
           </div>
         </div>
 
         <div class="stepper">
-          <span>Bunk Next:</span>
+          <span>Bunk next</span>
           <div class="stepper-controls">
-            <button type="button" id="sim-dec-bunk" class="step-btn" aria-label="Decrease bunk count">-</button>
-            <span id="sim-val-bunk" class="step-num">0</span>
+            <button type="button" id="sim-dec-bunk" class="step-btn" aria-label="Decrease bunk count">−</button>
+            <span id="sim-val-bunk" class="step-num mono">0</span>
             <button type="button" id="sim-inc-bunk" class="step-btn" aria-label="Increase bunk count">+</button>
           </div>
         </div>
 
         <div class="sim-result" id="sim-result-box">
-          <div class="sim-result-label">Projected Attendance</div>
-          <div class="sim-result-value" id="sim-projected-pct">--%</div>
-          <div class="sim-result-delta" id="sim-delta-badge">+0.0%</div>
-          <div class="sim-result-advice" id="sim-advice-text">Simulate classes above</div>
+          <div class="sim-result-label">Projected attendance</div>
+          <div class="sim-result-main">
+            <span class="sim-result-value mono" id="sim-projected-pct">--%</span>
+            <span class="sim-result-delta mono" id="sim-delta-badge">+0.0%</span>
+          </div>
+          <div class="sim-result-advice" id="sim-advice-text">Adjust classes above to simulate</div>
         </div>
       </div>
 
@@ -167,80 +181,66 @@
       </div>
     </div>
 
-    <!-- Tab 4: Class Departure Nudges -->
+    <!-- Tab 4: Departure Nudges -->
     <div id="nudges-tab" class="tab-pane">
-      <div class="summary-card" style="margin-bottom: 12px; background: rgba(30, 41, 59, 0.7);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div class="nudge-card">
+        <div class="nudge-head">
           <div>
-            <strong style="font-size:13px; color:#F8FAFC;">Class Departure Nudges</strong>
-            <div style="font-size:11px; color:#94A3B8;">Proactive alert before each class starts</div>
+            <strong class="nudge-title">Departure Nudges</strong>
+            <div class="nudge-sub">Alert before each scheduled class</div>
           </div>
-          <label class="switch">
+          <label class="switch" aria-label="Toggle departure nudges">
             <input type="checkbox" id="popup-nudge-toggle" checked>
-            <span class="slider round"></span>
+            <span class="slider"></span>
           </label>
         </div>
 
-        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 6px;">Alert Lead Time</div>
-        <div class="target-pills" style="margin-bottom: 12px;">
-          <button class="target-btn popup-lead-btn" data-lead="5">5 min</button>
-          <button class="target-btn popup-lead-btn active" data-lead="10">10 min</button>
-          <button class="target-btn popup-lead-btn" data-lead="15">15 min</button>
+        <div class="nudge-lead-row">
+          <span class="field-caption">Alert lead time</span>
+          <div class="target-pills">
+            <button type="button" class="target-btn popup-lead-btn" data-lead="5">5m</button>
+            <button type="button" class="target-btn popup-lead-btn active" data-lead="10">10m</button>
+            <button type="button" class="target-btn popup-lead-btn" data-lead="15">15m</button>
+          </div>
         </div>
 
-        <button id="popup-test-nudge-btn" class="footer-btn secondary" style="width: 100%; justify-content: center; margin-bottom: 10px;">
-          ⚡ Send Test Nudge Now
-        </button>
+        <button type="button" id="popup-test-nudge-btn" class="footer-btn secondary full-w">Send Test Nudge</button>
 
-        <div style="font-size: 10.5px; color: #94A3B8; line-height: 1.4; padding: 8px 10px; background: rgba(15,23,42,0.6); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
-          ℹ️ <em>Browser nudges fire only while your browser is open. For phone-native alarms, use the 10m .ics calendar export below.</em>
+        <div class="nudge-scope-note">
+          Browser alerts fire while Chrome is open. Export the 10m .ics file below for phone lock-screen reminders.
         </div>
       </div>
 
-      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 6px;">Today's Classes &amp; Rooms</div>
-      <div id="popup-today-classes" class="subject-list" style="max-height: 130px; overflow-y: auto;">
-        <!-- Populated dynamically -->
-      </div>
-      <div style="margin-top: 8px;">
-        <button id="popup-schedule-btn" class="footer-btn secondary" style="width: 100%; justify-content: center; font-size: 11px;">
-          📅 Customize / Upload Schedule
-        </button>
-      </div>
+      <div class="field-caption" style="margin: 10px 0 6px 2px;">Today's classes &amp; rooms</div>
+      <div id="popup-today-classes" class="subject-list" style="max-height: 120px;"></div>
+      <button type="button" id="popup-schedule-btn" class="footer-btn secondary full-w" style="margin-top: 8px;">Customize / Upload Schedule</button>
     </div>
 
     <!-- Compact Upcoming Canvas Deadlines (48h) Strip -->
     <div id="popup-deadlines-strip" class="popup-deadlines-strip" style="display: none;">
       <div class="popup-deadlines-head">
-        <span>Canvas Deadlines (48h)</span>
-        <span id="popup-deadlines-badge" class="popup-deadlines-badge">0</span>
+        <span>Canvas deadlines · 48h</span>
+        <span id="popup-deadlines-badge" class="mono">0</span>
       </div>
       <div id="popup-deadlines-items" class="popup-deadlines-items"></div>
     </div>
 
-    <!-- WhatsApp Share Status Button (Phase 3) -->
-    <div style="margin: 8px 0 4px 0;">
-      <button id="popup-copy-status-btn" class="footer-btn" style="background: #059669; color: #FFFFFF; width: 100%; justify-content: center; font-weight: 700;">
-        📋 Copy Status (WhatsApp)
-      </button>
+    <!-- Primary Share & Calendar Actions -->
+    <div class="primary-actions-grid">
+      <button type="button" id="popup-copy-status-btn" class="footer-btn primary">Copy Status</button>
+      <button type="button" id="cal-sync-btn" class="footer-btn secondary">10m Calendar (.ics)</button>
     </div>
 
-    <!-- Google Calendar 10-Min Pre-Class Alert Bar -->
-    <div style="margin: 12px 0 6px 0;">
-      <button id="cal-sync-btn" class="footer-btn" style="background: linear-gradient(135deg, #1E40AF, #2563EB); color: #FFFFFF; width: 100%; justify-content: center; font-weight: 700;">
-        📅 Add to Google Calendar (10m Alerts)
-      </button>
-    </div>
-
-    <!-- Footer Actions -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
-      <button id="diag-btn" class="footer-btn secondary" style="justify-content: center;" title="Copy scraper diagnostics to paste in chat">📋 Diagnostics</button>
-      <button id="restore-btn" class="footer-btn secondary" style="justify-content: center;" title="Restore settings and attendance backup">📤 Restore Backup</button>
-    </div>
-    <input type="file" id="restore-file-input" accept=".json" style="display: none;">
-
-    <footer class="footer">
-      <button id="sync-btn" class="footer-btn">🔄 Sync with Page</button>
-      <button id="export-btn" class="footer-btn secondary">📥 Export Backup</button>
+    <!-- Compact Utility Row -->
+    <footer class="utility-footer">
+      <button type="button" id="sync-btn" class="util-link">Sync Page</button>
+      <span class="dot-sep" aria-hidden="true">·</span>
+      <button type="button" id="export-btn" class="util-link">Backup</button>
+      <span class="dot-sep" aria-hidden="true">·</span>
+      <button type="button" id="restore-btn" class="util-link">Restore</button>
+      <span class="dot-sep" aria-hidden="true">·</span>
+      <button type="button" id="diag-btn" class="util-link">Diagnostics</button>
+      <input type="file" id="restore-file-input" accept=".json" style="display: none;">
     </footer>
   </div>
 

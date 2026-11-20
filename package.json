@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "build": "node --check server.js && node --check public/landing.js && node --check extension/lib/engine.js && node --check extension/data/timetable.js && node --check extension/content/parser.js && node --check extension/content/ui.js && node --check extension/content/content.js && node --check extension/newtab/newtab.js && node --check extension/popup/popup.js",
-    "lint": "node --check server.js && node --check public/landing.js && node --check extension/lib/engine.js && node --check extension/data/timetable.js && node --check extension/content/parser.js && node --check extension/content/ui.js && node --check extension/content/content.js && node --check extension/newtab/newtab.js && node --check extension/popup/popup.js",
+    "build": "node --check server.js && node --check public/landing.js && node --check extension/lib/engine.js && node --check extension/lib/share_card.js && node --check extension/data/timetable.js && node --check extension/content/parser.js && node --check extension/content/ui.js && node --check extension/content/content.js && node --check extension/newtab/newtab.js && node --check extension/newtab/studio_ux.js && node --check extension/popup/popup.js",
+    "lint": "node --check server.js && node --check public/landing.js && node --check extension/lib/engine.js && node --check extension/lib/share_card.js && node --check extension/data/timetable.js && node --check extension/content/parser.js && node --check extension/content/ui.js && node --check extension/content/content.js && node --check extension/newtab/newtab.js && node --check extension/newtab/studio_ux.js && node --check extension/popup/popup.js",
     "package:cws": "node scripts/package_cws.js"
   },
   "dependencies": {

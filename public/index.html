@@ -12,23 +12,24 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #F8FAFC;
+      --bg: #F7F8FA;
       --surface: #FFFFFF;
-      --surface-subtle: #F1F5F9;
-      --ink: #0F172A;
-      --ink-secondary: #475569;
-      --ink-muted: #64748B;
-      --border: #E2E8F0;
-      --border-strong: #CBD5E1;
-      --accent: #B91C1C;
-      --accent-hover: #991B1B;
+      --surface-subtle: #F1F3F6;
+      --ink: #0B0F19;
+      --ink-secondary: #4B5563;
+      --ink-muted: #6B7280;
+      --border: #E5E7EB;
+      --border-strong: #D1D5DB;
+      --accent: #C81E2B;
+      --accent-hover: #A61722;
       --accent-soft: #FEF2F2;
-      --safe: #047857;
+      --safe: #059669;
       --safe-soft: #ECFDF5;
       --warn: #B45309;
       --warn-soft: #FFFBEB;
       --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -183,11 +184,10 @@
 
     .eyebrow {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 600;
       color: var(--accent);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      letter-spacing: 0.01em;
       margin-bottom: 14px;
     }
 
@@ -197,6 +197,7 @@
       line-height: 1.08;
       letter-spacing: -0.035em;
       color: var(--ink);
+      text-wrap: balance;
       margin-bottom: 18px;
     }
 
@@ -319,19 +320,71 @@
     .sim-course-top {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       gap: 12px;
-      margin-bottom: 9px;
+      margin-bottom: 10px;
+    }
+
+    .sim-course-left {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .sim-ring-wrap {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sim-ring-svg {
+      width: 46px;
+      height: 46px;
+      transform: rotate(-90deg);
+    }
+
+    .sim-ring-track {
+      fill: none;
+      stroke: #EAECEF;
+      stroke-width: 4;
+    }
+
+    .sim-ring-arc {
+      fill: none;
+      stroke-width: 4;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.24s var(--ease-out), stroke 0.2s ease;
+    }
+
+    .sim-ring-label {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+    }
+
+    .sim-course-text {
+      min-width: 0;
     }
 
     .sim-course-name {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .sim-course-meta {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--ink-muted);
       margin-top: 2px;
     }
@@ -409,11 +462,10 @@
 
     .section-num {
       font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--ink-muted);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.01em;
       margin-bottom: 8px;
     }
 
@@ -422,6 +474,7 @@
       font-weight: 800;
       letter-spacing: -0.03em;
       color: var(--ink);
+      text-wrap: balance;
     }
 
     .section-desc {
@@ -703,6 +756,68 @@
       font-size: 12px;
     }
 
+    /* Shareable Safe Bunk Card Studio */
+    .share-studio-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .share-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .share-control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .share-control-group .preset-group {
+      align-self: flex-start;
+    }
+
+    .share-control-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-secondary);
+    }
+
+    .share-canvas-frame {
+      background: #090B10;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .share-canvas-frame canvas {
+      width: 100%;
+      max-width: 720px;
+      height: auto;
+      display: block;
+      border-radius: 9px;
+    }
+
+    .share-actions-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .share-feedback {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--safe);
+      min-height: 18px;
+    }
+
     /* Interactive Preview Hub */
     .hub-grid {
       display: grid;
@@ -720,7 +835,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      transition: border-color 0.15s ease, transform 0.15s ease;
+      transition: border-color 0.16s var(--ease-out), transform 0.16s var(--ease-out);
     }
 
     .hub-card:hover {
@@ -763,7 +878,8 @@
 
     @media (max-width: 980px) {
       .hero-grid,
-      .bento-grid {
+      .bento-grid,
+      .share-studio-grid {
         grid-template-columns: minmax(0, 1fr);
       }
       .trip-bar {
@@ -777,6 +893,19 @@
     @media (max-width: 640px) {
       .nav-links {
         display: none;
+      }
+      .topbar-inner {
+        padding: 0 16px;
+      }
+      .container {
+        padding: 0 16px;
+      }
+      .sim-course-top {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .sim-course-controls {
+        justify-content: flex-end;
       }
       .trip-bar {
         grid-template-columns: minmax(0, 1fr);
@@ -802,7 +931,7 @@
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#live-preview">Live Preview</a>
         <a href="#trip-planner">Trip Planner</a>
-        <a href="#batch-sync">Batch Sync</a>
+        <a href="#share-card">Share Card</a>
         <a href="#demos">Live Demos</a>
       </nav>
 
@@ -865,7 +994,7 @@
     <div class="container">
       <div class="section-head">
         <div>
-          <div class="section-num">01 / Trip &amp; Leave Planner</div>
+          <div class="section-num">01. Trip &amp; Leave Planner</div>
           <h2>Simulate an entire trip before booking tickets.</h2>
           <p class="section-desc">
             Select dates for a weekend trip, hackathon, or home visit. Bunkr cross-references your section's Rishihood timetable (skipping Sundays and Diwali break) and shows every course affected.
@@ -932,7 +1061,7 @@
     <div class="container">
       <div class="section-head">
         <div>
-          <div class="section-num">02 / Built for Campus-Wide Adoption</div>
+          <div class="section-num">02. Campus-Wide Batch Sync</div>
           <h2>One class rep sets it up. The whole section syncs in 10 seconds.</h2>
         </div>
       </div>
@@ -997,12 +1126,57 @@
     </div>
   </section>
 
-  <!-- Section 03: Interactive Preview Hub -->
+  <!-- Section 03: Export Safe Bunk Card Studio -->
+  <section class="section" id="share-card">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <div class="section-num">03. Export Safe Bunk Card</div>
+          <h2>Share a studio-grade attendance snapshot in one click.</h2>
+          <p class="section-desc">
+            Rendered 100% locally on an HTML5 canvas at 2x resolution — zero screenshots of messy portals, zero cloud uploads. Click +1 Attend or +1 Bunk above to watch this card update live.
+          </p>
+        </div>
+      </div>
+
+      <div class="playground-card share-studio-grid">
+        <div class="share-controls">
+          <div class="share-control-group">
+            <span class="share-control-label">Card Theme</span>
+            <div class="preset-group" id="lp-card-theme" role="group" aria-label="Share card theme">
+              <button type="button" class="active" data-card-theme="obsidian">Obsidian</button>
+              <button type="button" data-card-theme="ivory">Ivory</button>
+            </div>
+          </div>
+
+          <div class="share-control-group">
+            <span class="share-control-label">Trip Forecast Overlay</span>
+            <label class="excused-box">
+              <input type="checkbox" id="lp-card-include-trip" checked>
+              <span>Include active Trip Planner verdict</span>
+            </label>
+          </div>
+
+          <div class="share-actions-row">
+            <button type="button" id="lp-card-download" class="btn-primary btn-accent">Download PNG</button>
+            <button type="button" id="lp-card-copy" class="btn-secondary">Copy Image</button>
+          </div>
+          <div id="lp-card-feedback" class="share-feedback" aria-live="polite"></div>
+        </div>
+
+        <div class="share-canvas-frame">
+          <canvas id="lp-share-canvas" width="1080" height="660" aria-label="Live shareable Safe Bunk Card preview"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 04: Interactive Preview Hub -->
   <section class="section" id="demos" style="border-bottom:none;">
     <div class="container">
       <div class="section-head">
         <div>
-          <div class="section-num">03 / Interactive Surfaces</div>
+          <div class="section-num">04. Interactive Surfaces</div>
           <h2>Explore every screen live in your browser</h2>
         </div>
       </div>
@@ -1010,7 +1184,7 @@
       <div class="hub-grid">
         <a href="/newtab/newtab.html" class="hub-card">
           <strong>Command Center</strong>
-          <span>Full dashboard with Semester Projection, Trip Planner, Batch Sync, SGPA &amp; Deadlines.</span>
+          <span>Full Obsidian &amp; Daylight workspace with ⌘K palette, Trip Planner, SGPA &amp; Share Card studio.</span>
           <span class="hub-arrow">Open dashboard →</span>
         </a>
         <a href="/demo/rishiverse_cards_demo.html" class="hub-card">
@@ -1020,7 +1194,7 @@
         </a>
         <a href="/popup/popup.html" class="hub-card">
           <strong>Toolbar Popup</strong>
-          <span>Compact extension popup with Bunk Meter, dynamic Forecast, and Trip Dates What-If.</span>
+          <span>Compact extension popup with precision SVG ring, Forecast, Nudges &amp; inline overrides.</span>
           <span class="hub-arrow">Inspect popup →</span>
         </a>
         <a href="/demo/canvas_grades_demo.html" class="hub-card">
@@ -1046,6 +1220,7 @@
 
   <script src="/data/timetable.js"></script>
   <script src="/lib/engine.js"></script>
+  <script src="/lib/share_card.js"></script>
   <script src="/content/math.js"></script>
   <script src="/landing.js"></script>
 </body>
