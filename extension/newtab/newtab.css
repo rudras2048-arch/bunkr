@@ -1383,3 +1383,307 @@ input:checked + .slider:before {
   height: 100%;
 }
 
+/* ==========================================================================
+   Header Overview Link & Trip Planner / Batch Sync / Canvas Deadlines
+   ========================================================================== */
+.cc-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cc-home-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #CBD5E1;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: rgba(15, 23, 42, 0.55);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.cc-home-link:hover {
+  color: #F8FAFC;
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+.trip-controls-row {
+  display: grid;
+  grid-template-columns: 180px 180px 1fr;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.trip-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.trip-excused-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #CBD5E1;
+  cursor: pointer;
+}
+
+.trip-excused-toggle input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #2563EB;
+}
+
+.trip-verdict {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+  color: #6EE7B7;
+}
+
+.trip-verdict.warning {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.12);
+  color: #FDE68A;
+}
+
+.trip-verdict.danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  color: #FCA5A5;
+}
+
+.trip-verdict-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trip-verdict-main span {
+  font-size: 12px;
+  opacity: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-verdict-meta {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
+.trip-courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.trip-course-tile {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.trip-course-tile.risk {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.07);
+}
+
+.trip-course-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.trip-course-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #F8FAFC;
+}
+
+.trip-course-pct {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-course-sub {
+  font-size: 11px;
+  color: #94A3B8;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.batch-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.batch-preset-btn {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid var(--surface-border);
+  color: #CBD5E1;
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.batch-preset-btn:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+  color: #F8FAFC;
+}
+
+.batch-preset-btn.active {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(59, 130, 246, 0.6);
+  color: #93C5FD;
+}
+
+.batch-share-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  padding: 11px 12px;
+  margin-bottom: 12px;
+}
+
+.batch-share-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.batch-share-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.batch-code-preview {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #93C5FD;
+  background: rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 7px 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batch-import-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.batch-feedback {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.batch-feedback.ok {
+  background: rgba(16, 185, 129, 0.14);
+  color: #6EE7B7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.batch-feedback.err {
+  background: rgba(239, 68, 68, 0.14);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.deadlines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.deadline-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 9px;
+}
+
+.deadline-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #F8FAFC;
+}
+
+.deadline-course {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+.deadline-due {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  background: rgba(59, 130, 246, 0.16);
+  color: #93C5FD;
+}
+
+.deadline-due.urgent {
+  background: rgba(239, 68, 68, 0.18);
+  color: #FCA5A5;
+}
+
+@media (max-width: 780px) {
+  .trip-controls-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+

@@ -128,9 +128,109 @@
     return null;
   }
 
+  function cloneSlots(overrides = {}) {
+    const out = {};
+    for (const [key, subj] of Object.entries(SLOTS)) {
+      const patch = overrides[key] || {};
+      out[key] = {
+        ...subj,
+        ...patch,
+        slots: (patch.slots || subj.slots).map((s) => ({ ...s }))
+      };
+    }
+    return out;
+  }
+
+  // Pre-configured Rishihood University section presets for 1-click onboarding
+  const BATCH_PRESETS = {
+    'cse-ds-sec-a': {
+      id: 'cse-ds-sec-a',
+      label: 'B.Tech CSE (DS) · Section A',
+      section: 'Sec-A',
+      program: 'B.Tech - CSE (Data Science)',
+      semester: SEMESTER.semester,
+      startDate: SEMESTER.startDate,
+      endDate: SEMESTER.endDate,
+      diwaliBreak: { ...SEMESTER.diwaliBreak },
+      SLOTS: cloneSlots()
+    },
+    'cse-ds-sec-b': {
+      id: 'cse-ds-sec-b',
+      label: 'B.Tech CSE (DS) · Section B',
+      section: 'Sec-B',
+      program: 'B.Tech - CSE (Data Science)',
+      semester: SEMESTER.semester,
+      startDate: SEMESTER.startDate,
+      endDate: SEMESTER.endDate,
+      diwaliBreak: { ...SEMESTER.diwaliBreak },
+      SLOTS: cloneSlots({
+        psp: {
+          slots: [
+            { day: 1, time: '11:20', endTime: '12:50', room: 'A604' },
+            { day: 2, time: '11:20', endTime: '12:50', room: 'A604' },
+            { day: 4, time: '13:30', endTime: '15:00', room: 'A604' },
+            { day: 5, time: '13:30', endTime: '15:00', room: 'A604' }
+          ]
+        },
+        wad: {
+          slots: [
+            { day: 1, time: '13:30', endTime: '15:00', room: 'A604' },
+            { day: 3, time: '13:30', endTime: '15:00', room: 'A604' },
+            { day: 4, time: '15:30', endTime: '17:00', room: 'A302' },
+            { day: 5, time: '15:30', endTime: '17:00', room: 'A604' }
+          ]
+        },
+        kpmg: {
+          code: 'CSDS-2601',
+          slots: [
+            { day: 2, time: '15:30', endTime: '17:00', room: 'A603' },
+            { day: 5, time: '11:20', endTime: '12:50', room: 'A610' }
+          ]
+        }
+      })
+    },
+    'cse-aiml-sec-a': {
+      id: 'cse-aiml-sec-a',
+      label: 'B.Tech CSE (AI & ML) · Section A',
+      section: 'Sec-A',
+      program: 'B.Tech - CSE (AI & ML)',
+      semester: SEMESTER.semester,
+      startDate: SEMESTER.startDate,
+      endDate: SEMESTER.endDate,
+      diwaliBreak: { ...SEMESTER.diwaliBreak },
+      SLOTS: cloneSlots({
+        math: {
+          name: 'Linear Algebra & Calculus-I',
+          slots: [
+            { day: 1, time: '09:00', endTime: '10:00', room: 'A402' },
+            { day: 2, time: '09:00', endTime: '10:00', room: 'A402' },
+            { day: 4, time: '09:00', endTime: '10:00', room: 'A402' },
+            { day: 5, time: '10:10', endTime: '11:10', room: 'A402' }
+          ]
+        },
+        cfn: {
+          name: 'Foundations of AI Systems',
+          slots: [
+            { day: 2, time: '11:20', endTime: '12:50', room: 'A405' },
+            { day: 4, time: '11:20', endTime: '12:50', room: 'A405' }
+          ]
+        }
+      })
+    }
+  };
+
+  function getPreset(presetId) {
+    const preset = BATCH_PRESETS[presetId];
+    if (!preset) return null;
+    return JSON.parse(JSON.stringify(preset));
+  }
+
   return {
     SEMESTER,
     SLOTS,
+    BATCH_PRESETS,
+    getPreset,
     matchSubjectKey
   };
 });
+

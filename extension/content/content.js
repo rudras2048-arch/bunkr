@@ -66,11 +66,87 @@
     }
   }
 
-  // Helper to load previous good scrape
+  let lastLiveScrape = null;
+
+  function isDomElement(el) {
+    return Boolean(
+      el &&
+      typeof el === 'object' &&
+      el.nodeType === 1 &&
+      typeof el.closest === 'function' &&
+      typeof el.querySelector === 'function'
+    );
+  }
+
+  function sanitizeScrapeForStorage(data) {
+    if (!data || typeof data !== 'object') return data;
+    return {
+      ...data,
+      subjects: Array.isArray(data.subjects)
+        ? data.subjects.map(({ element, badgeTargetElement, ...serializable }) => serializable)
+        : []
+    };
+  }
+
+  function detectActiveSemesterKey() {
+    try {
+      const candidates = Array.from(document.querySelectorAll('select, button, [role="combobox"], [data-semester]'));
+      for (const el of candidates) {
+        if (el.closest && (el.closest('#attendmate-page-banner') || el.closest('#attendmate-drift-banner') || el.closest('#am-trip-popover'))) continue;
+        let text = '';
+        if (el.tagName === 'SELECT' && el.options && el.selectedIndex >= 0) {
+          text = el.options[el.selectedIndex].text || el.value || '';
+        } else {
+          text = (el.getAttribute && el.getAttribute('data-semester')) || el.innerText || el.textContent || '';
+        }
+        const match = String(text).match(/\b(sem(?:ester)?\s*\d+|term\s*\d+)\b/i);
+        if (match) {
+          return match[1].toLowerCase().replace(/\s+/g, '_');
+        }
+      }
+    } catch (e) {}
+    return 'default';
+  }
+
+  function getScopedStorageKeys() {
+    const semKey = detectActiveSemesterKey();
+    if (semKey === 'default') {
+      return {
+        primary: 'bunkr_last_good_scrape',
+        legacy: 'attendmate_last_good_scrape',
+        semesterKey: semKey
+      };
+    }
+    return {
+      primary: `bunkr_last_good_scrape_${semKey}`,
+      legacy: `attendmate_last_good_scrape_${semKey}`,
+      fallback: 'bunkr_last_good_scrape',
+      semesterKey: semKey
+    };
+  }
+
+  // Helper to load previous good scrape (scoped by active semester when detected)
   function getLastGoodScrape() {
     try {
-      const raw = localStorage.getItem('bunkr_last_good_scrape') || localStorage.getItem('attendmate_last_good_scrape');
-      return raw ? JSON.parse(raw) : null;
+      const keys = getScopedStorageKeys();
+      let raw = localStorage.getItem(keys.primary) || localStorage.getItem(keys.legacy);
+      // Only fall back to legacy global key when semester is Semester 1 / default
+      if (!raw && keys.fallback && (keys.semesterKey === 'semester_1' || keys.semesterKey === 'sem_1')) {
+        raw = localStorage.getItem(keys.fallback) || localStorage.getItem('attendmate_last_good_scrape');
+      }
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.subjects)) {
+        // Guard against legacy cached snapshots containing serialized `{}` DOM stubs
+        parsed.subjects = parsed.subjects.map((s) => {
+          if (!s || typeof s !== 'object') return s;
+          const cleaned = { ...s };
+          if (!isDomElement(cleaned.element)) delete cleaned.element;
+          if (!isDomElement(cleaned.badgeTargetElement)) delete cleaned.badgeTargetElement;
+          return cleaned;
+        });
+      }
+      return parsed;
     } catch (e) {
       return null;
     }
@@ -78,13 +154,54 @@
 
   function saveLastGoodScrape(data) {
     try {
-      localStorage.setItem('bunkr_last_good_scrape', JSON.stringify(data));
-      localStorage.setItem('attendmate_last_good_scrape', JSON.stringify(data));
+      const keys = getScopedStorageKeys();
+      const sanitized = sanitizeScrapeForStorage({ ...data, semesterKey: keys.semesterKey });
+      const serialized = JSON.stringify(sanitized);
+      localStorage.setItem(keys.primary, serialized);
+      localStorage.setItem(keys.legacy, serialized);
+      if (keys.semesterKey === 'default' || keys.semesterKey === 'semester_1' || keys.semesterKey === 'sem_1') {
+        localStorage.setItem('bunkr_last_good_scrape', serialized);
+        localStorage.setItem('attendmate_last_good_scrape', serialized);
+      }
     } catch (e) {}
+  }
+
+  function attachLiveElements(cachedSubjects, liveSubjects) {
+    if (!Array.isArray(cachedSubjects)) return [];
+    const liveByName = new Map();
+    const liveByCode = new Map();
+    if (Array.isArray(liveSubjects)) {
+      for (const ls of liveSubjects) {
+        const nKey = (ls.name || '').trim().toLowerCase();
+        const cKey = (ls.code || '').trim().toLowerCase();
+        if (nKey) liveByName.set(nKey, ls);
+        if (cKey) liveByCode.set(cKey, ls);
+      }
+    }
+
+    return cachedSubjects.map((s) => {
+      const nKey = (s.name || '').trim().toLowerCase();
+      const cKey = (s.code || '').trim().toLowerCase();
+      const liveMatch = (nKey && liveByName.get(nKey)) || (cKey && liveByCode.get(cKey)) || null;
+      const next = { ...s };
+      if (liveMatch && isDomElement(liveMatch.element)) {
+        next.element = liveMatch.element;
+      } else if (!isDomElement(next.element)) {
+        delete next.element;
+      }
+      if (liveMatch && isDomElement(liveMatch.badgeTargetElement)) {
+        next.badgeTargetElement = liveMatch.badgeTargetElement;
+      } else if (!isDomElement(next.badgeTargetElement)) {
+        delete next.badgeTargetElement;
+      }
+      return next;
+    });
   }
 
   /**
    * Drift Detection Algorithm
+   * Tolerates minor 1-2 lecture faculty corrections/cancellations while catching
+   * real portal layout breakages and major data regressions.
    */
   function checkScrapeDrift(prev, curr) {
     if (!curr || !Array.isArray(curr.subjects) || curr.subjects.length === 0) {
@@ -92,7 +209,8 @@
         return {
           drifted: true,
           reason: 'Scrape returned 0 courses. Portal layout may have changed.',
-          type: 'empty_scrape'
+          type: 'empty_scrape',
+          canAcceptLive: false
         };
       }
       return { drifted: false };
@@ -110,7 +228,8 @@
       return {
         drifted: true,
         reason: `Course count decreased from ${prevSubjects.length} to ${currSubjects.length}.`,
-        type: 'course_count_drop'
+        type: 'course_count_drop',
+        canAcceptLive: true
       };
     }
 
@@ -127,24 +246,36 @@
       if (!p) continue;
 
       if (p.total > 0 && s.total < p.total) {
-        return {
-          drifted: true,
-          reason: `Classes held for "${s.name}" dropped from ${p.total} to ${s.total}.`,
-          type: 'held_dropped'
-        };
+        const heldDrop = p.total - s.total;
+        const heldDropRatio = heldDrop / p.total;
+        // Tolerate minor faculty adjustments (1-2 cancelled/reclassified classes <= 15%)
+        if (s.total === 0 || (heldDrop >= 3 && heldDropRatio > 0.15)) {
+          return {
+            drifted: true,
+            reason: `Classes held for "${s.name}" dropped from ${p.total} to ${s.total}.`,
+            type: 'held_dropped',
+            canAcceptLive: true
+          };
+        }
       }
       if (p.attended > 0 && s.attended < p.attended) {
-        return {
-          drifted: true,
-          reason: `Attended classes for "${s.name}" dropped from ${p.attended} to ${s.attended}.`,
-          type: 'attended_dropped'
-        };
+        const attendedDrop = p.attended - s.attended;
+        const attendedDropRatio = attendedDrop / p.attended;
+        if ((p.attended >= 3 && s.attended === 0) || (attendedDrop >= 3 && attendedDropRatio > 0.15)) {
+          return {
+            drifted: true,
+            reason: `Attended classes for "${s.name}" dropped from ${p.attended} to ${s.attended}.`,
+            type: 'attended_dropped',
+            canAcceptLive: true
+          };
+        }
       }
       if (p.total >= 10 && s.total > p.total * 1.5) {
         return {
           drifted: true,
           reason: `Conducted classes for "${s.name}" jumped sharply from ${p.total} to ${s.total}.`,
-          type: 'sharp_jump'
+          type: 'sharp_jump',
+          canAcceptLive: true
         };
       }
     }
@@ -239,6 +370,9 @@
 
     try {
       const scannedResult = parser.scanPage(currentTarget);
+      if (scannedResult && Array.isArray(scannedResult.subjects) && scannedResult.subjects.length > 0) {
+        lastLiveScrape = scannedResult;
+      }
       const prevGood = getLastGoodScrape();
       const drift = checkScrapeDrift(prevGood, scannedResult);
 
@@ -246,10 +380,11 @@
 
       if (drift.drifted) {
         console.warn('[Bunkr] Scrape drift detected:', drift.reason);
-        // Do NOT overwrite last good scrape. Use last good data with drift metadata attached.
+        // Do NOT overwrite last good scrape. Use last good data with live DOM elements re-attached.
         if (prevGood) {
           resultToRender = {
             ...prevGood,
+            subjects: attachLiveElements(prevGood.subjects, scannedResult?.subjects),
             drift
           };
         } else {
@@ -371,14 +506,28 @@
           mutation.target.id === 'attendmate-page-banner' ||
           mutation.target.id === 'bunkr-drift-banner' ||
           mutation.target.id === 'attendmate-drift-banner' ||
+          mutation.target.id === 'bunkr-safety-pill' ||
+          mutation.target.id === 'attendmate-safety-pill' ||
           mutation.target.id?.includes('canvas-grades') ||
           mutation.target.id?.includes('canvas-radar') ||
           mutation.target.id?.includes('canvas-forecaster') ||
           mutation.target.id === 'am-override-popover' ||
           mutation.target.id === 'am-popover-backdrop' ||
+          mutation.target.id === 'am-trip-popover' ||
+          mutation.target.id === 'am-trip-backdrop' ||
+          mutation.target.id === 'am-tools-menu' ||
           (mutation.target.closest && (
             mutation.target.closest('#bunkr-root') ||
             mutation.target.closest('#attendmate-root') ||
+            mutation.target.closest('#bunkr-page-banner') ||
+            mutation.target.closest('#attendmate-page-banner') ||
+            mutation.target.closest('#bunkr-drift-banner') ||
+            mutation.target.closest('#attendmate-drift-banner') ||
+            mutation.target.closest('#bunkr-safety-pill') ||
+            mutation.target.closest('#attendmate-safety-pill') ||
+            mutation.target.closest('#am-trip-popover') ||
+            mutation.target.closest('#am-override-popover') ||
+            mutation.target.closest('#am-tools-menu') ||
             mutation.target.closest('#canvas-grades-forecaster') ||
             mutation.target.closest('#canvas-assignment-radar') ||
             mutation.target.closest('.canvas-grades-banner')
@@ -422,6 +571,25 @@
     isCircuitBroken = false;
     consecutiveErrors = 0;
     removeSafetyPill();
+    runScanAndRender();
+  };
+
+  // Allow user to explicitly accept live ERP counts as the new baseline when drift triggers
+  window.BunkrAcceptCurrentScrape = window.AttendMateAcceptCurrentScrape = () => {
+    const parser = window.BunkrParser || window.AttendMateParser;
+    const freshScan = parser ? parser.scanPage(currentTarget) : lastLiveScrape;
+    const candidate = (freshScan && Array.isArray(freshScan.subjects) && freshScan.subjects.length > 0)
+      ? freshScan
+      : lastLiveScrape;
+
+    if (candidate && Array.isArray(candidate.subjects) && candidate.subjects.length > 0) {
+      candidate.drift = { drifted: false };
+      saveLastGoodScrape(candidate);
+    }
+    isCircuitBroken = false;
+    consecutiveErrors = 0;
+    removeSafetyPill();
+    setupObserver();
     runScanAndRender();
   };
 

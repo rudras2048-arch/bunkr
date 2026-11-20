@@ -13,7 +13,7 @@
       <div class="brand">
         <img src="../icons/icon32.png" alt="Logo" class="logo">
         <div>
-          <h1 class="title">Bunkr <small style="font-size:11px; font-weight:normal; opacity:0.6;">v2.4.1</small></h1>
+          <h1 class="title">Bunkr <small style="font-size:11px; font-weight:normal; opacity:0.6;">v2.4.2</small></h1>
           <span class="subtitle" id="connection-status">Connecting...</span>
         </div>
       </div>
@@ -100,8 +100,8 @@
     <!-- Tab: Semester Forecast -->
     <div id="forecast-tab" class="tab-pane">
       <div style="background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.3); border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px;">
-        <div style="font-weight:700; color:#C4B5FD;">Diwali Sem 2026 Ends: Dec 18, 2026</div>
-        <div style="color:#94A3B8; margin-top:2px;">21 teaching days remaining &bull; 89 total classes</div>
+        <div id="forecast-sem-title" style="font-weight:700; color:#C4B5FD;">Loading semester dates...</div>
+        <div id="forecast-sem-stats" style="color:#94A3B8; margin-top:2px;">Calculating remaining teaching days...</div>
       </div>
       <div id="forecast-list" class="subject-list">
         <!-- Rendered dynamically -->
@@ -110,8 +110,13 @@
 
     <!-- Tab 2: What-If Simulator -->
     <div id="sim-tab" class="tab-pane">
-      <div class="sim-container">
-        <label class="form-label">Select Course:</label>
+      <div class="sim-mode-toggle" role="tablist" aria-label="Simulator mode">
+        <button type="button" class="sim-mode-btn active" data-sim-mode="classes" id="sim-mode-classes-btn">By Classes</button>
+        <button type="button" class="sim-mode-btn" data-sim-mode="trip" id="sim-mode-trip-btn">Trip Dates</button>
+      </div>
+
+      <div class="sim-container" id="sim-classes-pane">
+        <label class="form-label" for="sim-subject-select">Select Course:</label>
         <select id="sim-subject-select" class="select-input">
           <option value="all">Overall (All Courses)</option>
         </select>
@@ -119,18 +124,18 @@
         <div class="stepper">
           <span>Attend Next:</span>
           <div class="stepper-controls">
-            <button id="sim-dec-attend" class="step-btn">-</button>
+            <button type="button" id="sim-dec-attend" class="step-btn" aria-label="Decrease attend count">-</button>
             <span id="sim-val-attend" class="step-num">0</span>
-            <button id="sim-inc-attend" class="step-btn">+</button>
+            <button type="button" id="sim-inc-attend" class="step-btn" aria-label="Increase attend count">+</button>
           </div>
         </div>
 
         <div class="stepper">
           <span>Bunk Next:</span>
           <div class="stepper-controls">
-            <button id="sim-dec-bunk" class="step-btn">-</button>
+            <button type="button" id="sim-dec-bunk" class="step-btn" aria-label="Decrease bunk count">-</button>
             <span id="sim-val-bunk" class="step-num">0</span>
-            <button id="sim-inc-bunk" class="step-btn">+</button>
+            <button type="button" id="sim-inc-bunk" class="step-btn" aria-label="Increase bunk count">+</button>
           </div>
         </div>
 
@@ -140,6 +145,25 @@
           <div class="sim-result-delta" id="sim-delta-badge">+0.0%</div>
           <div class="sim-result-advice" id="sim-advice-text">Simulate classes above</div>
         </div>
+      </div>
+
+      <div class="sim-container" id="sim-trip-pane" style="display: none;">
+        <div class="popup-trip-dates">
+          <label class="popup-trip-field">
+            <span>From</span>
+            <input type="date" id="popup-trip-start" class="select-input" aria-label="Trip start date">
+          </label>
+          <label class="popup-trip-field">
+            <span>To</span>
+            <input type="date" id="popup-trip-end" class="select-input" aria-label="Trip end date">
+          </label>
+        </div>
+        <label class="popup-trip-excused">
+          <input type="checkbox" id="popup-trip-excused">
+          <span>+1 Medical / Duty Leave per affected course</span>
+        </label>
+        <div class="popup-trip-verdict" id="popup-trip-verdict">Pick dates to check impact</div>
+        <div id="popup-trip-list" class="popup-trip-list"></div>
       </div>
     </div>
 
@@ -182,6 +206,15 @@
           📅 Customize / Upload Schedule
         </button>
       </div>
+    </div>
+
+    <!-- Compact Upcoming Canvas Deadlines (48h) Strip -->
+    <div id="popup-deadlines-strip" class="popup-deadlines-strip" style="display: none;">
+      <div class="popup-deadlines-head">
+        <span>Canvas Deadlines (48h)</span>
+        <span id="popup-deadlines-badge" class="popup-deadlines-badge">0</span>
+      </div>
+      <div id="popup-deadlines-items" class="popup-deadlines-items"></div>
     </div>
 
     <!-- WhatsApp Share Status Button (Phase 3) -->

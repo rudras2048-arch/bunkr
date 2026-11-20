@@ -669,6 +669,7 @@ function initNewTab() {
   let customCourseCredits = {};
   let currentTargetSGPA = 8.0;
   let lastStoredCoursesGrades = null;
+  let lastTripPlan = null;
 
   // Initialize Clock
   updateClock();
@@ -676,7 +677,7 @@ function initNewTab() {
 
   // Initialize Settings
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get(['nudgesEnabled', 'nudgeLeadMinutes', 'targetPercentage', 'cachedAttendance', 'bunkrData', 'attendmateData', 'manualOverrides', 'customTimetable', 'canvas_courses_grades', 'targetSGPA', 'sgpa_scale_mode', 'custom_course_credits'], (res) => {
+    chrome.storage.local.get(['nudgesEnabled', 'nudgeLeadMinutes', 'targetPercentage', 'cachedAttendance', 'bunkrData', 'attendmateData', 'manualOverrides', 'customTimetable', 'canvas_courses_grades', 'canvas_assignments', 'targetSGPA', 'sgpa_scale_mode', 'custom_course_credits'], (res) => {
       const engine = window.BunkrEngine || window.AttendMateEngine;
       if (res.nudgesEnabled !== undefined) {
         nudgesEnabled = Boolean(res.nudgesEnabled);
@@ -718,12 +719,15 @@ function initNewTab() {
       renderSchedule(res.customTimetable);
       renderProjection(res);
       renderSGPASimulator(res.canvas_courses_grades, currentTargetSGPA);
+      renderBatchSync(res.customTimetable);
+      renderTripPlanner();
+      renderCanvasDeadlines(res.canvas_assignments);
     });
 
     if (chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area === 'local') {
-          chrome.storage.local.get(['nudgesEnabled', 'nudgeLeadMinutes', 'targetPercentage', 'cachedAttendance', 'bunkrData', 'attendmateData', 'manualOverrides', 'customTimetable', 'canvas_courses_grades', 'targetSGPA', 'sgpa_scale_mode', 'custom_course_credits'], (res) => {
+          chrome.storage.local.get(['nudgesEnabled', 'nudgeLeadMinutes', 'targetPercentage', 'cachedAttendance', 'bunkrData', 'attendmateData', 'manualOverrides', 'customTimetable', 'canvas_courses_grades', 'canvas_assignments', 'targetSGPA', 'sgpa_scale_mode', 'custom_course_credits'], (res) => {
             const engine = window.BunkrEngine || window.AttendMateEngine;
             if (res.customTimetable && engine) {
               engine.setActiveTimetable(res.customTimetable);
@@ -743,11 +747,25 @@ function initNewTab() {
             renderSchedule(res.customTimetable);
             renderProjection(res);
             renderSGPASimulator(res.canvas_courses_grades, currentTargetSGPA);
+            renderBatchSync(res.customTimetable);
+            renderTripPlanner();
+            renderCanvasDeadlines(res.canvas_assignments);
           });
         }
       });
     }
   } else {
+    let localTimetable = null;
+    try {
+      const savedTt = localStorage.getItem('bunkr_custom_timetable');
+      if (savedTt) {
+        localTimetable = JSON.parse(savedTt);
+        const engine = window.BunkrEngine || window.AttendMateEngine;
+        if (engine && localTimetable && localTimetable.SLOTS) {
+          engine.setActiveTimetable(localTimetable);
+        }
+      }
+    } catch (e) {}
     try {
       const localScale = localStorage.getItem('bunkr_sgpa_scale_mode');
       if (localScale === 'linear' || localScale === 'ugc') {
@@ -760,10 +778,17 @@ function initNewTab() {
         customCourseCredits = JSON.parse(localCr);
       }
     } catch (e) {}
-    renderSchedule();
+    renderSchedule(localTimetable);
     renderProjection({});
     renderSGPASimulator(null, null);
+    renderBatchSync(localTimetable);
+    renderTripPlanner();
+    renderCanvasDeadlines(null);
   }
+
+  // Setup interactive controllers for Trip Planner & Batch Sync
+  setupTripPlanner();
+  setupBatchSync();
 
   // Setup SGPA Simulator interactive controls
   setupSGPAEventListeners();
@@ -800,34 +825,45 @@ function initNewTab() {
 
   // Test Nudge Action
   testNudgeBtn.addEventListener('click', () => {
+    const showSentState = () => {
+      const orig = testNudgeBtn.innerHTML;
+      testNudgeBtn.innerHTML = '✅ Notification Sent!';
+      testNudgeBtn.style.background = '#059669';
+      setTimeout(() => {
+        testNudgeBtn.innerHTML = orig;
+        testNudgeBtn.style.background = '';
+      }, 2200);
+    };
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({
         type: 'TEST_NUDGE',
         course: 'PSP',
         time: '13:30',
         room: 'A603'
-      }, (res) => {
-        const orig = testNudgeBtn.innerHTML;
-        testNudgeBtn.innerHTML = '✅ Notification Sent!';
-        testNudgeBtn.style.background = '#059669';
-        setTimeout(() => {
-          testNudgeBtn.innerHTML = orig;
-          testNudgeBtn.style.background = '';
-        }, 2200);
+      }, () => {
+        showSentState();
       });
     } else {
-      alert('Notification simulated: Move — PSP starts 13:30 in A603');
+      showSentState();
+      if (typeof showToast === 'function') {
+        showToast('Preview nudge: Move — PSP starts 13:30 in A603');
+      }
     }
   });
 
   // Download .ics Calendar Button
   calBtn.addEventListener('click', () => {
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
-      const calUrl = chrome.runtime.getURL('rishihood_classes_10min_alert.ics');
-      const a = document.createElement('a');
-      a.href = calUrl;
-      a.download = 'Rishihood_Classes_10Min_Alerts.ics';
-      a.click();
+    const calUrl = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL)
+      ? chrome.runtime.getURL('rishihood_classes_10min_alert.ics')
+      : '../rishihood_classes_10min_alert.ics';
+    const a = document.createElement('a');
+    a.href = calUrl;
+    a.download = 'Rishihood_Classes_10Min_Alerts.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (typeof showToast === 'function') {
+      showToast('Downloaded Rishihood_Classes_10Min_Alerts.ics');
     }
   });
 
@@ -913,12 +949,12 @@ function initNewTab() {
       const diffMins = slotMinutes - curMinutes;
 
       heroTitle.textContent = `📍 Move — ${nextClass.acronym} starts in ${diffMins}m`;
-      heroDetails.textContent = `${nextClass.subjectName} &bull; Room ${nextClass.room || 'TBA'} at ${nextClass.time}`;
+      heroDetails.textContent = `${nextClass.subjectName} • Room ${nextClass.room || 'TBA'} at ${nextClass.time}`;
       heroCountdown.textContent = `Starts at ${nextClass.time} (${diffMins} minutes away)`;
     } else {
       heroTitle.textContent = '🎉 All Classes Done for Today!';
       heroDetails.textContent = 'You have completed all scheduled sessions for today.';
-      heroCountdown.textContent = 'Rest easy &bull; See you tomorrow';
+      heroCountdown.textContent = 'Rest easy • See you tomorrow';
     }
   }
 
@@ -985,6 +1021,22 @@ function initNewTab() {
       if (maxValEl) maxValEl.textContent = `${proj.overallMaxPct.toFixed(1)}%`;
       if (remValEl) remValEl.textContent = `${proj.totalRemainingSessions}`;
       if (targetValEl) targetValEl.textContent = `${proj.targetPercentage}%`;
+
+      if (typeof engine.getRemainingTeachingSummary === 'function') {
+        const semSummary = engine.getRemainingTeachingSummary(new Date());
+        const remSubEl = document.getElementById('proj-rem-sub');
+        const semSubEl = document.getElementById('proj-semester-sub');
+        const footerTextEl = document.getElementById('cc-footer-text');
+        if (remSubEl) {
+          remSubEl.textContent = `${semSummary.teachingDaysLeft} teaching days till ${semSummary.endDateFormatted}`;
+        }
+        if (semSubEl) {
+          semSubEl.innerHTML = `Forecast to semester finish (${semSummary.endDateFormatted}) &bull; Target: <strong id="proj-target-val" style="color:#F8FAFC;">${proj.targetPercentage}%</strong>`;
+        }
+        if (footerTextEl) {
+          footerTextEl.textContent = `Bunkr 2.4.2 • Private & Local • Semester ends: ${semSummary.endDateFormatted}`;
+        }
+      }
 
       // Stale notice inheritance
       if (staleBadge) {
@@ -2271,24 +2323,32 @@ function initNewTab() {
           renderSchedule(pendingTimetable);
           chrome.storage.local.get(['cachedAttendance', 'bunkrData', 'attendmateData', 'manualOverrides', 'targetPercentage'], (res) => {
             renderProjection(res);
+            renderBatchSync(pendingTimetable);
+            renderTripPlanner();
           });
           closeScheduleModal();
-          alert('✅ Custom timetable successfully applied! Your departure nudges, countdowns, and projections now use your schedule.');
+          showToast('Custom timetable applied to nudges, projections & trip planner.');
         });
       } else {
         const engine = window.BunkrEngine || window.AttendMateEngine;
         if (engine) {
           engine.setActiveTimetable(pendingTimetable);
         }
+        try {
+          localStorage.setItem('bunkr_custom_timetable', JSON.stringify(pendingTimetable));
+        } catch (e) {}
         renderSchedule(pendingTimetable);
+        renderProjection({});
+        renderBatchSync(pendingTimetable);
+        renderTripPlanner();
         closeScheduleModal();
+        showToast('Custom timetable applied.');
       }
     });
   }
 
   if (scheduleResetBtn) {
     scheduleResetBtn.addEventListener('click', () => {
-      if (!confirm('Reset your schedule to the default B.Tech CSE Semester 1 timetable?')) return;
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.remove('customTimetable', () => {
           const engine = window.BunkrEngine || window.AttendMateEngine;
@@ -2298,16 +2358,24 @@ function initNewTab() {
           renderSchedule();
           chrome.storage.local.get(['cachedAttendance', 'bunkrData', 'attendmateData', 'manualOverrides', 'targetPercentage'], (res) => {
             renderProjection(res);
+            renderBatchSync(null);
+            renderTripPlanner();
           });
           closeScheduleModal();
+          showToast('Reset to default B.Tech CSE (DS) Sem 1 schedule.');
         });
       } else {
         const engine = window.BunkrEngine || window.AttendMateEngine;
         if (engine) {
           engine.setActiveTimetable(null);
         }
+        try { localStorage.removeItem('bunkr_custom_timetable'); } catch (e) {}
         renderSchedule();
+        renderProjection({});
+        renderBatchSync(null);
+        renderTripPlanner();
         closeScheduleModal();
+        showToast('Reset to default B.Tech CSE (DS) Sem 1 schedule.');
       }
     });
   }
@@ -2325,6 +2393,337 @@ function initNewTab() {
     scheduleModal.addEventListener('click', (e) => {
       if (e.target === scheduleModal) closeScheduleModal();
     });
+  }
+
+  // ==========================================================================
+  // Trip & Leave Date-Range Planner Controller
+  // ==========================================================================
+  function formatIsoLocal(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function getDefaultTripRange(daysCount = 3) {
+    const start = new Date();
+    start.setDate(start.getDate() + 1);
+    const end = new Date(start);
+    end.setDate(end.getDate() + Math.max(0, daysCount - 1));
+    return { startIso: formatIsoLocal(start), endIso: formatIsoLocal(end) };
+  }
+
+  // lastTripPlan hoisted to initNewTab scope
+
+  function setupTripPlanner() {
+    const startInput = document.getElementById('cc-trip-start');
+    const endInput = document.getElementById('cc-trip-end');
+    const excusedCheck = document.getElementById('cc-trip-excused');
+    const presetGroup = document.getElementById('cc-trip-presets');
+    const copyTripBtn = document.getElementById('cc-trip-copy-btn');
+
+    if (startInput && endInput && !startInput.value) {
+      const def = getDefaultTripRange(3);
+      startInput.value = def.startIso;
+      endInput.value = def.endIso;
+    }
+
+    if (presetGroup) {
+      presetGroup.querySelectorAll('[data-trip-days]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const days = parseInt(btn.getAttribute('data-trip-days'), 10) || 3;
+          presetGroup.querySelectorAll('[data-trip-days]').forEach((b) => b.classList.toggle('active', b === btn));
+          const range = getDefaultTripRange(days);
+          if (startInput) startInput.value = range.startIso;
+          if (endInput) endInput.value = range.endIso;
+          renderTripPlanner();
+        });
+      });
+    }
+
+    [startInput, endInput, excusedCheck].forEach((el) => {
+      if (el) {
+        el.addEventListener('change', () => {
+          if (el !== excusedCheck && presetGroup) {
+            presetGroup.querySelectorAll('[data-trip-days]').forEach((b) => b.classList.remove('active'));
+          }
+          renderTripPlanner();
+        });
+      }
+    });
+
+    if (copyTripBtn) {
+      copyTripBtn.addEventListener('click', () => {
+        const engine = window.BunkrEngine || window.AttendMateEngine;
+        if (!engine || !lastTripPlan || !lastTripPlan.valid) return;
+        const text = engine.generateTripShareText(lastTripPlan);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            const orig = copyTripBtn.textContent;
+            copyTripBtn.textContent = 'Copied Plan!';
+            setTimeout(() => { copyTripBtn.textContent = orig; }, 1800);
+            showToast('Trip plan copied for WhatsApp');
+          }).catch(() => {
+            showToast('Trip plan ready — clipboard unavailable in preview');
+          });
+        }
+      });
+    }
+
+    renderTripPlanner();
+  }
+
+  function renderTripPlanner() {
+    const engine = window.BunkrEngine || window.AttendMateEngine;
+    const startInput = document.getElementById('cc-trip-start');
+    const endInput = document.getElementById('cc-trip-end');
+    const excusedCheck = document.getElementById('cc-trip-excused');
+    const verdictBox = document.getElementById('cc-trip-verdict');
+    const verdictText = document.getElementById('cc-trip-verdict-text');
+    const overallText = document.getElementById('cc-trip-overall-text');
+    const metaText = document.getElementById('cc-trip-meta-text');
+    const coursesEl = document.getElementById('cc-trip-courses');
+
+    if (!engine || !startInput || !endInput || !verdictBox || !coursesEl) return;
+    if (!startInput.value || !endInput.value) {
+      const def = getDefaultTripRange(3);
+      startInput.value = def.startIso;
+      endInput.value = def.endIso;
+    }
+
+    const subjects = (currentProjectionState && Array.isArray(currentProjectionState.subjects) && currentProjectionState.subjects.length > 0)
+      ? currentProjectionState.subjects
+      : fallbackSubjects;
+    const targetPct = (currentProjectionState && currentProjectionState.targetPercentage) || 75;
+    const overrides = (currentProjectionState && currentProjectionState.overrides) || {};
+
+    const plan = engine.simulateLeavePlan(subjects, startInput.value, endInput.value, {
+      targetPercentage: targetPct,
+      overrides,
+      excusedLeaves: excusedCheck && excusedCheck.checked ? 1 : 0
+    });
+    lastTripPlan = plan;
+
+    if (!plan.valid) {
+      verdictBox.className = 'trip-verdict danger';
+      verdictText.textContent = plan.error || 'Select a valid date range.';
+      overallText.textContent = '';
+      metaText.textContent = '';
+      coursesEl.innerHTML = '';
+      return;
+    }
+
+    verdictBox.className = `trip-verdict ${plan.verdictTone}`;
+    verdictText.textContent = plan.verdict;
+    overallText.textContent = `Overall: ${plan.overallBeforePct.toFixed(1)}% → ${plan.overallAfterPct.toFixed(1)}% (${plan.overallDeltaPct >= 0 ? '+' : ''}${plan.overallDeltaPct.toFixed(1)}%)`;
+    metaText.textContent = `${plan.totalMissedSessions} classes across ${plan.teachingDaysMissed} teaching day${plan.teachingDaysMissed === 1 ? '' : 's'}`;
+
+    if (plan.affectedCourses.length === 0) {
+      coursesEl.innerHTML = `<div class="trip-course-tile"><div class="trip-course-name">Zero scheduled classes affected</div><div class="trip-course-sub"><span>${plan.startLabel} – ${plan.endLabel} falls on weekend or campus break</span></div></div>`;
+      return;
+    }
+
+    coursesEl.innerHTML = plan.affectedCourses.map((c) => {
+      const pctColor = c.safeAfter ? '#34D399' : '#FCA5A5';
+      const detail = c.safeAfter
+        ? (c.excusedApplied > 0 ? `Safe (${c.excusedApplied} excused applied)` : 'Remains above target')
+        : (c.excusedLeavesToSave > 0
+          ? `Need ${c.excusedLeavesToSave} excused or ${c.recoveryClasses} next classes`
+          : `Need ${c.recoveryClasses} classes to recover`);
+      return `
+        <div class="trip-course-tile ${c.safeAfter ? '' : 'risk'}">
+          <div class="trip-course-top">
+            <span class="trip-course-name">${c.acronym} &middot; ${c.name}</span>
+            <span class="trip-course-pct" style="color:${pctColor};">${c.beforePct.toFixed(0)}% → ${c.afterPct.toFixed(1)}%</span>
+          </div>
+          <div class="trip-course-sub">
+            <span>-${c.missed} class${c.missed === 1 ? '' : 'es'}</span>
+            <span>${detail}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ==========================================================================
+  // Batch & Section Sync Controller (1-Click Presets + BUNKR-TT1 Share Codes)
+  // ==========================================================================
+  function applyActiveTimetable(timetableObj, labelMsg) {
+    const engine = window.BunkrEngine || window.AttendMateEngine;
+    if (!engine || !timetableObj) return;
+    engine.setActiveTimetable(timetableObj);
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ customTimetable: timetableObj });
+    }
+    try {
+      localStorage.setItem('bunkr_custom_timetable', JSON.stringify(timetableObj));
+    } catch (e) {}
+
+    renderSchedule(timetableObj);
+    renderProjection(currentProjectionState || {});
+    renderBatchSync(timetableObj);
+    renderTripPlanner();
+    if (labelMsg) showToast(labelMsg);
+  }
+
+  function renderBatchSync(activeTt = null) {
+    const engine = window.BunkrEngine || window.AttendMateEngine;
+    const ttLib = window.BunkrTimetable || window.AttendMateTimetable;
+    const presetsEl = document.getElementById('cc-preset-pills');
+    const codePreviewEl = document.getElementById('cc-batch-code-preview');
+    const sectionBadge = document.getElementById('cc-active-section-badge');
+
+    if (!engine || !ttLib) return;
+    const currentTt = activeTt || engine.getActiveTimetable();
+    const activePresetId = (currentTt && currentTt.presetId) || (!currentTt || !currentTt.custom ? 'cse-ds-sec-a' : '');
+
+    if (sectionBadge) {
+      sectionBadge.textContent = (currentTt && currentTt.section) ? currentTt.section : 'Sec-A';
+    }
+
+    if (presetsEl && ttLib.BATCH_PRESETS) {
+      presetsEl.innerHTML = Object.values(ttLib.BATCH_PRESETS).map((preset) => {
+        const isActive = preset.id === activePresetId;
+        return `<button type="button" class="batch-preset-btn ${isActive ? 'active' : ''}" data-preset-id="${preset.id}">${preset.label}</button>`;
+      }).join('');
+
+      presetsEl.querySelectorAll('[data-preset-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-preset-id');
+          const preset = ttLib.getPreset(id);
+          if (!preset) return;
+          preset.custom = id !== 'cse-ds-sec-a';
+          preset.presetId = id;
+          preset.weeklySessionsCount = Object.values(preset.SLOTS).reduce((acc, s) => acc + (s.slots ? s.slots.length : 0), 0);
+          applyActiveTimetable(preset, `Switched timetable to ${preset.label}`);
+        });
+      });
+    }
+
+    if (codePreviewEl && typeof engine.encodeBatchCode === 'function') {
+      codePreviewEl.textContent = engine.encodeBatchCode(currentTt);
+    }
+  }
+
+  function setupBatchSync() {
+    const copyBtn = document.getElementById('cc-copy-batch-btn');
+    const applyBtn = document.getElementById('cc-apply-batch-btn');
+    const inputEl = document.getElementById('cc-batch-code-input');
+    const feedbackEl = document.getElementById('cc-batch-feedback');
+
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const engine = window.BunkrEngine || window.AttendMateEngine;
+        if (!engine) return;
+        const code = engine.encodeBatchCode(engine.getActiveTimetable());
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code).then(() => {
+            const orig = copyBtn.textContent;
+            copyBtn.textContent = 'Copied Code!';
+            setTimeout(() => { copyBtn.textContent = orig; }, 1800);
+            showToast('Batch code copied — drop it in your section WhatsApp group!');
+          }).catch(() => {
+            if (feedbackEl) {
+              feedbackEl.style.display = 'block';
+              feedbackEl.className = 'batch-feedback ok';
+              feedbackEl.textContent = 'Batch code ready above — select and copy.';
+            }
+          });
+        }
+      });
+    }
+
+    if (applyBtn && inputEl) {
+      applyBtn.addEventListener('click', () => {
+        const engine = window.BunkrEngine || window.AttendMateEngine;
+        if (!engine) return;
+        const res = engine.decodeBatchCode(inputEl.value);
+        if (!res.ok) {
+          if (feedbackEl) {
+            feedbackEl.style.display = 'block';
+            feedbackEl.className = 'batch-feedback err';
+            feedbackEl.textContent = res.error;
+          }
+          return;
+        }
+        applyActiveTimetable(res.timetable, `Loaded shared batch timetable (${res.timetable.section} · ${res.timetable.weeklySessionsCount} classes/wk)`);
+        if (feedbackEl) {
+          feedbackEl.style.display = 'block';
+          feedbackEl.className = 'batch-feedback ok';
+          feedbackEl.textContent = `Applied ${res.timetable.program} (${res.timetable.section}) — ${res.timetable.subjectsCount} courses, ${res.timetable.weeklySessionsCount} sessions/week.`;
+        }
+        inputEl.value = '';
+      });
+    }
+  }
+
+  // ==========================================================================
+  // Upcoming Canvas Deadlines Renderer
+  // ==========================================================================
+  function renderCanvasDeadlines(storedAssignments) {
+    const listEl = document.getElementById('cc-deadlines-list');
+    const countEl = document.getElementById('cc-deadlines-count');
+    if (!listEl) return;
+
+    let items = Array.isArray(storedAssignments) ? storedAssignments : [];
+    if (items.length === 0) {
+      try {
+        const raw = localStorage.getItem('bunkr_canvas_assignments');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) items = parsed;
+        }
+      } catch (e) {}
+    }
+
+    // Filter unsubmitted upcoming items; provide deterministic preview entries in standalone mode
+    const nowMs = Date.now();
+    let upcoming = items
+      .filter((a) => a && a.dueAt && !a.submitted)
+      .map((a) => ({
+        title: a.title || a.name || 'Assignment',
+        course: a.course || a.courseName || 'Canvas Course',
+        dueMs: new Date(a.dueAt).getTime(),
+        url: a.url || 'https://rishihood.instructure.com'
+      }))
+      .filter((a) => !isNaN(a.dueMs) && a.dueMs >= nowMs - 3600000)
+      .sort((a, b) => a.dueMs - b.dueMs)
+      .slice(0, 5);
+
+    const isPreviewDemo = upcoming.length === 0 && typeof chrome === 'undefined';
+    if (isPreviewDemo) {
+      upcoming = [
+        { title: 'PSP Lab 06: Recursion & Backtracking', course: 'Problem Solving & Programming', dueMs: nowMs + 18 * 3600000 },
+        { title: 'WAD Responsive Grid Portfolio Checkpoint', course: 'Web Application Development I', dueMs: nowMs + 42 * 3600000 },
+        { title: 'Linear Systems Problem Set 4', course: 'Mathematics-I (Foundation)', dueMs: nowMs + 96 * 3600000 }
+      ];
+    }
+
+    if (countEl) {
+      countEl.textContent = isPreviewDemo
+        ? `${upcoming.length} preview`
+        : `${upcoming.length} upcoming`;
+    }
+
+    if (upcoming.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; padding:22px 12px; color:#94A3B8; font-size:12.5px;">No upcoming Canvas deadlines cached yet.<br><span style="font-size:11px; color:#64748B;">Open your Canvas Assignments page once to sync automatically.</span></div>`;
+      return;
+    }
+
+    listEl.innerHTML = upcoming.map((item) => {
+      const diffHrs = Math.max(0, Math.round((item.dueMs - nowMs) / 3600000));
+      const urgent = diffHrs <= 24;
+      const dueLabel = diffHrs < 24
+        ? `Due in ${diffHrs}h`
+        : `Due in ${Math.round(diffHrs / 24)}d`;
+      return `
+        <div class="deadline-item">
+          <div>
+            <div class="deadline-title">${item.title}</div>
+            <div class="deadline-course">${item.course}</div>
+          </div>
+          <span class="deadline-due ${urgent ? 'urgent' : ''}">${dueLabel}</span>
+        </div>
+      `;
+    }).join('');
   }
 
   if (typeof window !== 'undefined' && window.location && window.location.search && window.location.search.includes('modal=schedule')) {

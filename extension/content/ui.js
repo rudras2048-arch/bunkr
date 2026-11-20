@@ -21,6 +21,16 @@
 
   let activeCustomTimetable = null;
 
+  function isDomElement(el) {
+    return Boolean(
+      el &&
+      typeof el === 'object' &&
+      el.nodeType === 1 &&
+      typeof el.closest === 'function' &&
+      typeof el.querySelector === 'function'
+    );
+  }
+
   function updateTimetable(timetable) {
     activeCustomTimetable = timetable || null;
     const engine = window.BunkrEngine || window.AttendMateEngine;
@@ -561,7 +571,8 @@
     if (subjects.length === 0) return;
 
     // 2. Identify Layout: Table vs Cards
-    const firstSubjectEl = subjects[0]?.element;
+    const firstSubjectWithEl = subjects.find((s) => isDomElement(s?.element));
+    const firstSubjectEl = firstSubjectWithEl ? firstSubjectWithEl.element : null;
     const table = firstSubjectEl ? firstSubjectEl.closest('table') : document.querySelector('table');
 
     if (table) {
@@ -590,7 +601,7 @@
     }
 
     const referenceEl = document.querySelector('table, .card, [class*="attendance"], [class*="course"], main');
-    if (!referenceEl) return;
+    if (!referenceEl || !referenceEl.parentNode) return;
 
     if (!banner) {
       banner = document.createElement('div');
@@ -599,6 +610,7 @@
     }
 
     const freshnessStr = formatFreshness(cachedData?.timestamp, portal);
+    const showAcceptLive = drift.canAcceptLive !== false && drift.type !== 'empty_scrape';
 
     banner.innerHTML = `
       <div class="am-drift-left">
@@ -609,10 +621,30 @@
         </div>
       </div>
       <div class="am-drift-actions">
+        ${showAcceptLive ? `<button id="am-drift-accept-btn" class="am-drift-btn accept" title="Trust the current ERP counts and update saved baseline">✓ Use Current Data</button>` : ''}
         <button id="am-drift-diag-btn" class="am-drift-btn" title="Copy debugging summary to clipboard">📋 Diagnostics</button>
         <button id="am-drift-retry-btn" class="am-drift-btn primary" title="Retry scraping page">🔄 Retry Scrape</button>
       </div>
     `;
+
+    const acceptBtn = banner.querySelector('#am-drift-accept-btn');
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        const acceptFn = window.BunkrAcceptCurrentScrape || window.AttendMateAcceptCurrentScrape;
+        if (acceptFn) {
+          acceptFn();
+          showToast('✅ Updated to current ERP attendance data');
+        } else {
+          try {
+            localStorage.removeItem('bunkr_last_good_scrape');
+            localStorage.removeItem('attendmate_last_good_scrape');
+          } catch (e) {}
+          const rescan = window.BunkrRescan || window.AttendMateRescan;
+          if (rescan) rescan();
+          else window.location.reload();
+        }
+      });
+    }
 
     banner.querySelector('#am-drift-diag-btn').addEventListener('click', copyDiagnostics);
     banner.querySelector('#am-drift-retry-btn').addEventListener('click', () => {
@@ -640,7 +672,169 @@
   }
 
   /**
-   * In-Page Semester Info Banner with Freshness & 10m Calendar Sync
+   * In-Page Quick Trip / Leave Planner Modal
+   * Lets students simulate multi-day absences directly on Rishiverse ERP.
+   */
+  function closeTripPlannerModal() {
+    const existing = document.getElementById('am-trip-popover');
+    if (existing) existing.remove();
+    const backdrop = document.getElementById('am-trip-backdrop');
+    if (backdrop) backdrop.remove();
+  }
+
+  function formatIsoDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function openTripPlannerModal() {
+    closeTripPlannerModal();
+    const engine = window.BunkrEngine || window.AttendMateEngine;
+    if (!engine || typeof engine.simulateLeavePlan !== 'function' || !cachedData) {
+      showToast('Trip planner requires attendance data on this page.');
+      return;
+    }
+
+    const subjects = applyOverrides(cachedData.subjects || []);
+    const activeTT = activeCustomTimetable || (engine.getActiveTimetable ? engine.getActiveTimetable() : null);
+
+    // Default to a sensible 3-day trip starting tomorrow (aligned to semester year)
+    const now = new Date();
+    const baseStart = new Date(2026, now.getMonth(), now.getDate() + 1);
+    const semEnd = new Date(2026, 11, 18);
+    const defaultStart = baseStart > semEnd ? new Date(2026, 10, 16) : baseStart;
+    const defaultEnd = new Date(defaultStart.getFullYear(), defaultStart.getMonth(), defaultStart.getDate() + 2);
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'am-trip-backdrop';
+    backdrop.className = 'am-popover-backdrop';
+
+    const popover = document.createElement('div');
+    popover.id = 'am-trip-popover';
+    popover.className = 'am-trip-popover';
+
+    popover.innerHTML = `
+      <div class="am-trip-header">
+        <div>
+          <div class="am-trip-title">Trip &amp; Leave Planner</div>
+          <div class="am-trip-sub">Simulate missing classes across dates using your active timetable</div>
+        </div>
+        <button id="am-trip-close-btn" class="am-trip-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="am-trip-presets">
+        <button type="button" class="am-trip-preset-btn" data-days="0">Tomorrow</button>
+        <button type="button" class="am-trip-preset-btn active" data-days="2">3-Day Trip</button>
+        <button type="button" class="am-trip-preset-btn" data-days="4">5-Day Home Visit</button>
+      </div>
+      <div class="am-trip-dates">
+        <label>
+          <span>From</span>
+          <input type="date" id="am-trip-start" value="${formatIsoDate(defaultStart)}">
+        </label>
+        <label>
+          <span>To</span>
+          <input type="date" id="am-trip-end" value="${formatIsoDate(defaultEnd)}">
+        </label>
+        <label class="am-trip-excused">
+          <input type="checkbox" id="am-trip-excused-toggle">
+          <span>+1 Medical / Duty Leave</span>
+        </label>
+      </div>
+      <div id="am-trip-results" class="am-trip-results"></div>
+      <div class="am-trip-footer">
+        <button type="button" id="am-trip-copy-btn" class="am-drift-btn accept">Copy Trip Plan (WhatsApp)</button>
+        <button type="button" id="am-trip-done-btn" class="am-btn-ghost">Close</button>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(popover);
+
+    const startInput = popover.querySelector('#am-trip-start');
+    const endInput = popover.querySelector('#am-trip-end');
+    const excusedToggle = popover.querySelector('#am-trip-excused-toggle');
+    const resultsEl = popover.querySelector('#am-trip-results');
+    let latestPlan = null;
+
+    function updateTripView() {
+      latestPlan = engine.simulateLeavePlan(subjects, startInput.value, endInput.value, {
+        targetPercentage: currentTargetPercentage,
+        timetable: activeTT,
+        overrides: getStoredOverrides(),
+        excusedLeaves: excusedToggle.checked ? 1 : 0
+      });
+
+      if (!latestPlan.valid) {
+        resultsEl.innerHTML = `<div class="am-trip-verdict danger">${latestPlan.error}</div>`;
+        return;
+      }
+
+      const courseRows = latestPlan.affectedCourses.length === 0
+        ? `<div class="am-trip-empty">No scheduled lectures fall inside ${latestPlan.startLabel} – ${latestPlan.endLabel}.</div>`
+        : latestPlan.affectedCourses.map((c) => {
+            const stateClass = c.safeAfter ? 'safe' : (c.droppedBelowTarget ? 'danger' : 'warning');
+            const note = c.safeAfter
+              ? 'Safe'
+              : (c.excusedLeavesToSave > 0 ? `Needs ${c.excusedLeavesToSave} excused` : `Attend ${c.recoveryClasses} after`);
+            return `
+              <div class="am-trip-row">
+                <div class="am-trip-course">
+                  <strong>${c.acronym}</strong>
+                  <span>-${c.missed} cls</span>
+                </div>
+                <div class="am-trip-nums">
+                  <span>${c.beforePct.toFixed(1)}% &rarr; <strong class="${stateClass}">${c.afterPct.toFixed(1)}%</strong></span>
+                  <span class="am-trip-tag ${stateClass}">${note}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+      resultsEl.innerHTML = `
+        <div class="am-trip-verdict ${latestPlan.verdictTone}">
+          <strong>${latestPlan.verdict}</strong>
+          <span>Overall: ${latestPlan.overallBeforePct.toFixed(1)}% &rarr; ${latestPlan.overallAfterPct.toFixed(1)}% &middot; ${latestPlan.totalMissedSessions} classes missed</span>
+        </div>
+        <div class="am-trip-list">${courseRows}</div>
+      `;
+    }
+
+    popover.querySelectorAll('.am-trip-preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        popover.querySelectorAll('.am-trip-preset-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const spanDays = parseInt(btn.getAttribute('data-days'), 10) || 0;
+        const s = new Date(defaultStart.getTime());
+        const e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + spanDays);
+        startInput.value = formatIsoDate(s);
+        endInput.value = formatIsoDate(e);
+        updateTripView();
+      });
+    });
+
+    startInput.addEventListener('change', updateTripView);
+    endInput.addEventListener('change', updateTripView);
+    excusedToggle.addEventListener('change', updateTripView);
+
+    backdrop.addEventListener('click', closeTripPlannerModal);
+    popover.querySelector('#am-trip-close-btn').addEventListener('click', closeTripPlannerModal);
+    popover.querySelector('#am-trip-done-btn').addEventListener('click', closeTripPlannerModal);
+
+    popover.querySelector('#am-trip-copy-btn').addEventListener('click', () => {
+      if (!latestPlan || !latestPlan.valid) return;
+      const text = engine.generateTripShareText(latestPlan);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('✅ Trip plan copied for WhatsApp!');
+        }).catch(() => {});
+      }
+    });
+
+    updateTripView();
+  }
+
+  /**
+   * In-Page Native Semester Summary Bar (Decluttered for Rishiverse ERP)
+   * Keeps everyday actions front-and-center while tucking setup/debug tools into a compact menu.
    */
   function injectPageBanner(referenceEl, portal = 'Rishiverse') {
     if (referenceEl && (referenceEl.id === 'grades_summary' || (referenceEl.closest && referenceEl.closest('#grades_summary')))) {
@@ -660,46 +854,101 @@
     const isStale = cachedData?.drift?.drifted;
     const engine = window.BunkrEngine || window.AttendMateEngine;
     const activeTT = activeCustomTimetable || (engine && engine.getActiveTimetable ? engine.getActiveTimetable() : null);
-    let finishLineStr = 'Dec 18, 2026';
-    if (activeTT && activeTT.endDate) {
-      const ed = new Date(activeTT.endDate);
-      if (!isNaN(ed.getTime())) {
-        finishLineStr = ed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      }
-    }
-    const semesterTitle = (activeTT && (activeTT.semester || activeTT.program)) || 'Semester';
+    const summary = engine && typeof engine.getRemainingTeachingSummary === 'function'
+      ? engine.getRemainingTeachingSummary(new Date(), activeTT)
+      : { endDateFormatted: 'Dec 18, 2026', teachingDaysLeft: 21, totalClassesLeft: 89, semesterTitle: 'Semester' };
+
+    const effectiveSubjects = applyOverrides(cachedData?.subjects || []);
+    let totAtt = 0;
+    let totHeld = 0;
+    effectiveSubjects.forEach((s) => {
+      totAtt += Number(s.attended) || 0;
+      totHeld += Number(s.total) || 0;
+    });
+    const overallPct = totHeld > 0 ? ((totAtt / totHeld) * 100).toFixed(1) : '--';
+    const overallSafe = totHeld > 0 && (totAtt / totHeld) * 100 >= currentTargetPercentage;
 
     banner.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <strong>🎓 ${semesterTitle} Finish Line: ${finishLineStr}</strong> &bull; Target: <strong>${currentTargetPercentage}%</strong>
-        <span id="attendmate-freshness-text" class="attendmate-freshness-tag ${isStale ? 'stale' : ''}">🕒 ${freshnessStr}</span>
+      <div class="am-banner-left">
+        <div class="am-banner-brand">
+          <span class="am-banner-overall ${overallSafe ? 'safe' : 'warn'}">${overallPct}%</span>
+          <div class="am-banner-meta">
+            <strong>Bunkr &middot; ${summary.teachingDaysLeft} teaching days left</strong>
+            <span>Ends ${summary.endDateFormatted} &middot; <span id="attendmate-freshness-text" class="am-banner-freshness ${isStale ? 'stale' : ''}">${freshnessStr}</span></span>
+          </div>
+        </div>
+        <div class="am-target-segment" role="group" aria-label="Target attendance percentage">
+          <button type="button" class="am-target-chip ${currentTargetPercentage === 75 ? 'active' : ''}" data-target="75">75%</button>
+          <button type="button" class="am-target-chip ${currentTargetPercentage === 80 ? 'active' : ''}" data-target="80">80%</button>
+          <button type="button" class="am-target-chip ${currentTargetPercentage === 85 ? 'active' : ''}" data-target="85">85%</button>
+        </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-        <button id="attendmate-copy-status-btn" class="attendmate-banner-btn" style="background:#059669;" title="Copy plain-text attendance summary ready for WhatsApp">
-          📋 Copy Status
+      <div class="am-banner-actions">
+        <button type="button" id="attendmate-trip-btn" class="attendmate-banner-btn am-btn-trip" title="Simulate missing upcoming dates using your timetable">
+          Plan Trip
         </button>
-        <button id="attendmate-open-cc-btn" class="attendmate-banner-btn" style="background:#4F46E5;" title="Open College Command Center Dashboard">
-          📊 Command Center
+        <button type="button" id="attendmate-copy-status-btn" class="attendmate-banner-btn am-btn-share" title="Copy plain-text attendance summary ready for WhatsApp">
+          Copy Status
         </button>
-        <button id="attendmate-test-nudge-btn" class="attendmate-banner-btn" style="background:#2563EB;" title="Test proactive class departure nudge notification">
-          ⚡ Test Nudge
-        </button>
-        <button id="attendmate-diag-btn" class="attendmate-banner-btn" style="background:#475569;" title="Copy scraper diagnostics to paste in chat">
-          📋 Diagnostics
-        </button>
-        <button id="attendmate-cal-sync-btn" class="attendmate-banner-btn" title="Add all classes with 10-minute pre-class room alerts to Google Calendar">
-          📅 Add to Google Calendar (10m Alerts)
-        </button>
+        <div class="am-tools-wrap">
+          <button type="button" id="attendmate-tools-toggle" class="attendmate-banner-btn am-btn-subtle" aria-haspopup="true" aria-expanded="false" title="More Bunkr tools">
+            Tools &#9662;
+          </button>
+          <div id="am-tools-menu" class="am-tools-menu" style="display: none;">
+            <button type="button" id="attendmate-open-cc-btn" class="am-tools-item">Command Center</button>
+            <button type="button" id="attendmate-cal-sync-btn" class="am-tools-item">Export 10m Calendar (.ics)</button>
+            <button type="button" id="attendmate-test-nudge-btn" class="am-tools-item">Send Test Nudge</button>
+            <button type="button" id="attendmate-diag-btn" class="am-tools-item">Copy Diagnostics</button>
+          </div>
+        </div>
       </div>
     `;
 
-    banner.querySelector('#attendmate-diag-btn').addEventListener('click', copyDiagnostics);
+    banner.querySelectorAll('.am-target-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const val = parseFloat(chip.getAttribute('data-target')) || 75;
+        setTargetPercentage(val);
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.set({ targetPercentage: val });
+        }
+      });
+    });
+
+    const tripBtn = banner.querySelector('#attendmate-trip-btn');
+    if (tripBtn) {
+      tripBtn.addEventListener('click', openTripPlannerModal);
+    }
+
+    const toolsToggle = banner.querySelector('#attendmate-tools-toggle');
+    const toolsMenu = banner.querySelector('#am-tools-menu');
+    if (toolsToggle && toolsMenu) {
+      toolsToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const open = toolsMenu.style.display === 'block';
+        toolsMenu.style.display = open ? 'none' : 'block';
+        toolsToggle.setAttribute('aria-expanded', String(!open));
+      });
+      document.addEventListener('click', () => {
+        if (toolsMenu) toolsMenu.style.display = 'none';
+      }, { once: true });
+    }
+
+    const diagBtn = banner.querySelector('#attendmate-diag-btn');
+    if (diagBtn) {
+      diagBtn.addEventListener('click', () => {
+        if (toolsMenu) toolsMenu.style.display = 'none';
+        copyDiagnostics();
+      });
+    }
 
     const ccBtn = banner.querySelector('#attendmate-open-cc-btn');
     if (ccBtn) {
       ccBtn.addEventListener('click', () => {
+        if (toolsMenu) toolsMenu.style.display = 'none';
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
           window.open(chrome.runtime.getURL('newtab/newtab.html'), '_blank');
+        } else {
+          window.location.href = '/newtab/newtab.html';
         }
       });
     }
@@ -707,10 +956,10 @@
     const copyStatusBtn = banner.querySelector('#attendmate-copy-status-btn');
     if (copyStatusBtn) {
       copyStatusBtn.addEventListener('click', () => {
-        const engine = window.BunkrEngine || window.AttendMateEngine;
-        if (!engine || !cachedData) return;
+        const eng = window.BunkrEngine || window.AttendMateEngine;
+        if (!eng || !cachedData) return;
         const subjects = applyOverrides(cachedData.subjects || []);
-        const shareText = engine.generateShareText({
+        const shareText = eng.generateShareText({
           subjects,
           targetPercentage: currentTargetPercentage,
           overrides: getStoredOverrides(),
@@ -722,10 +971,8 @@
           navigator.clipboard.writeText(shareText).then(() => {
             showToast('✅ WhatsApp status copied to clipboard!');
           }).catch(() => {
-            prompt('Copy WhatsApp Status:', shareText);
+            showToast('Copy failed — clipboard permission denied.');
           });
-        } else {
-          prompt('Copy WhatsApp Status:', shareText);
         }
       });
     }
@@ -733,17 +980,18 @@
     const testNudgeBtn = banner.querySelector('#attendmate-test-nudge-btn');
     if (testNudgeBtn) {
       testNudgeBtn.addEventListener('click', () => {
+        if (toolsMenu) toolsMenu.style.display = 'none';
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
           chrome.runtime.sendMessage({
             type: 'TEST_NUDGE',
             course: 'PSP',
             time: '13:30',
             room: 'A603'
-          }, (res) => {
-            showToast('⚡ Sent: Move — PSP starts 13:30 in A603');
+          }, () => {
+            showToast('Sent: Move — PSP starts 13:30 in A603');
           });
         } else {
-          showToast('⚡ Move — PSP starts 13:30 in A603');
+          showToast('Move — PSP starts 13:30 in A603');
         }
       });
     }
@@ -751,25 +999,15 @@
     const calBtn = banner.querySelector('#attendmate-cal-sync-btn');
     if (calBtn) {
       calBtn.addEventListener('click', () => {
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
-          const calUrl = chrome.runtime.getURL('rishihood_classes_10min_alert.ics');
-          const a = document.createElement('a');
-          a.href = calUrl;
-          a.download = 'Rishihood_Classes_10Min_Alerts.ics';
-          a.click();
-
-          const origText = calBtn.innerHTML;
-          calBtn.innerHTML = '✅ Downloaded! Opening Calendar...';
-          calBtn.style.backgroundColor = '#059669';
-
-          setTimeout(() => {
-            window.open('https://calendar.google.com/calendar/r/settings/export', '_blank');
-            calBtn.innerHTML = origText;
-            calBtn.style.backgroundColor = '';
-          }, 1200);
-        } else {
-          window.open('https://calendar.google.com/calendar/r/settings/export', '_blank');
-        }
+        if (toolsMenu) toolsMenu.style.display = 'none';
+        const calUrl = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL)
+          ? chrome.runtime.getURL('rishihood_classes_10min_alert.ics')
+          : '/rishihood_classes_10min_alert.ics';
+        const a = document.createElement('a');
+        a.href = calUrl;
+        a.download = 'Rishihood_Classes_10Min_Alerts.ics';
+        a.click();
+        showToast('Downloaded 10-minute class alerts (.ics)');
       });
     }
   }
@@ -816,7 +1054,7 @@
     }
 
     subjects.forEach((subj) => {
-      const row = subj.element ? subj.element.closest('tr') : null;
+      const row = isDomElement(subj.element) ? subj.element.closest('tr') : null;
       if (!row) return;
 
       const remaining = getDynamicRemainingClasses(subj.name);
@@ -865,15 +1103,22 @@
   }
 
   /**
-   * Injects Apple HIG Badges for Card/Grid layouts
+   * Injects Native-Styled Bunk Strips for Modern Card/Grid Layouts (Rishiverse ERP)
    */
   function injectCardBadges(subjects, data) {
+    const engine = window.BunkrEngine || window.AttendMateEngine;
+
     subjects.forEach((subj) => {
-      const targetEl = subj.badgeTargetElement || subj.element;
+      const targetEl = isDomElement(subj.badgeTargetElement)
+        ? subj.badgeTargetElement
+        : (isDomElement(subj.element) ? subj.element : null);
       if (!targetEl) return;
 
       const remaining = getDynamicRemainingClasses(subj.name);
       const calc = calculateBunkWithDeficitRecovery(subj.attended, subj.total, remaining, currentTargetPercentage);
+      const excusedInfo = engine && typeof engine.calculateExcusedRecovery === 'function'
+        ? engine.calculateExcusedRecovery(subj.attended, subj.total, currentTargetPercentage)
+        : null;
 
       let badge = targetEl.querySelector('.attendmate-miss-badge');
       if (!badge) {
@@ -886,17 +1131,21 @@
         ? `[Manual Override: ${subj.attended}/${subj.total}] • Click to edit or reset`
         : `${calc.advice} • Click to override counts`;
 
-      const dotClass = calc.badgeClass;
-      let html = `<div style="display:flex; align-items:center; width:100%; justify-content:space-between;">`;
-      html += `<div><span class="am-status-dot ${dotClass}"></span> ${calc.statusText}`;
-
+      let rightMeta = '';
       if (subj.isManualOverride) {
-        html += ` <span class="am-manual-pill">✏️ Manual (${subj.attended}/${subj.total})</span>`;
+        rightMeta = `<span class="am-manual-pill">Manual (${subj.attended}/${subj.total})</span>`;
       } else if (data?.drift?.drifted) {
-        html += ` <small style="color:#B45309; font-weight:600; font-size:11px;">(Last known)</small>`;
+        rightMeta = `<small style="color:#B45309; font-weight:600; font-size:11px;">Last known</small>`;
+      } else if (subj.excusedPct > 0) {
+        rightMeta = `<span class="am-excused-note">Includes ${subj.excusedPct}% excused</span>`;
+      } else if (excusedInfo && !excusedInfo.alreadySafe && excusedInfo.neededExcused > 0) {
+        rightMeta = `<span class="am-excused-note">${excusedInfo.neededExcused} medical/duty leave recovers ${currentTargetPercentage}%</span>`;
       }
 
-      html += `</div><span class="am-edit-trigger" title="Edit counts">✏️</span></div>`;
+      let html = `<div class="am-badge-row">`;
+      html += `<div class="am-badge-main">${calc.statusText}</div>`;
+      html += `<div class="am-badge-right">${rightMeta}<span class="am-edit-trigger" title="Edit counts">Edit</span></div>`;
+      html += `</div>`;
 
       if (calc.subText) {
         html += `<div class="am-badge-subtext">${calc.subText}</div>`;
@@ -934,6 +1183,7 @@
     applyOverrides,
     copyDiagnostics,
     openOverrideModal,
+    openTripPlannerModal,
     saveOverride,
     resetOverride
   };

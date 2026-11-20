@@ -13,11 +13,14 @@
       <div class="cc-brand">
         <img src="../icons/icon32.png" alt="Logo" class="cc-logo">
         <div>
-          <h1 class="cc-title">Bunkr <span class="cc-badge">Command Center v2.4.1</span></h1>
+          <h1 class="cc-title">Bunkr <span class="cc-badge">Command Center v2.4.2</span></h1>
           <div class="cc-sub" id="cc-date-time">Loading date & time...</div>
         </div>
       </div>
-      <div class="cc-location">📍 Rishihood University &bull; Sonipat, Haryana</div>
+      <div class="cc-header-right">
+        <a href="/" class="cc-home-link" title="Back to Bunkr Showcase">Overview</a>
+        <div class="cc-location">📍 Rishihood University &bull; Sonipat, Haryana</div>
+      </div>
     </header>
 
     <!-- Main Hero: Next Up Class / Nudge Status -->
@@ -86,6 +89,53 @@
         <div id="coach-callouts-list" class="coach-callouts">
           <!-- Populated dynamically -->
         </div>
+      </div>
+    </section>
+
+    <!-- Trip & Leave Date-Range Planner -->
+    <section class="cc-card cc-trip-card" id="cc-trip-card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Trip &amp; Leave Planner</h2>
+          <p class="card-sub">Pick travel or home-visit dates to simulate exact classes missed from your active timetable</p>
+        </div>
+        <div class="proj-header-actions" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div class="pills-group" id="cc-trip-presets">
+            <button type="button" class="pill-btn" data-trip-days="1">Tomorrow</button>
+            <button type="button" class="pill-btn active" data-trip-days="3">3-Day Trip</button>
+            <button type="button" class="pill-btn" data-trip-days="5">5-Day Home</button>
+          </div>
+          <button type="button" id="cc-trip-copy-btn" class="action-btn secondary" style="font-size:12px; padding:7px 12px;">
+            Copy Trip Plan
+          </button>
+        </div>
+      </div>
+
+      <div class="trip-controls-row">
+        <label class="trip-field">
+          <span>From date</span>
+          <input type="date" id="cc-trip-start" class="form-input" aria-label="Trip start date">
+        </label>
+        <label class="trip-field">
+          <span>To date</span>
+          <input type="date" id="cc-trip-end" class="form-input" aria-label="Trip end date">
+        </label>
+        <label class="trip-excused-toggle">
+          <input type="checkbox" id="cc-trip-excused">
+          <span>Apply +1 Medical / Duty Leave credit per affected course</span>
+        </label>
+      </div>
+
+      <div id="cc-trip-verdict" class="trip-verdict safe">
+        <div class="trip-verdict-main">
+          <strong id="cc-trip-verdict-text">Calculating trip impact...</strong>
+          <span id="cc-trip-overall-text">--</span>
+        </div>
+        <div class="trip-verdict-meta" id="cc-trip-meta-text">--</div>
+      </div>
+
+      <div id="cc-trip-courses" class="trip-courses-grid">
+        <!-- Populated dynamically -->
       </div>
     </section>
 
@@ -252,6 +302,55 @@
       </section>
     </div>
 
+    <!-- Two-Column Grid: Batch & Section Sync + Upcoming Canvas Deadlines -->
+    <div class="cc-grid">
+      <section class="cc-card" id="cc-batch-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Batch &amp; Section Sync</h2>
+            <p class="card-sub">Switch Rishihood section presets in 1 click or share your timetable via WhatsApp batch code</p>
+          </div>
+          <span class="day-badge" id="cc-active-section-badge">Sec-A</span>
+        </div>
+
+        <div class="batch-presets-row" id="cc-preset-pills">
+          <!-- Populated from BunkrTimetable.BATCH_PRESETS -->
+        </div>
+
+        <div class="batch-share-box">
+          <div class="batch-share-top">
+            <span class="batch-share-label">Your Active Timetable Code</span>
+            <button type="button" id="cc-copy-batch-btn" class="action-btn secondary" style="font-size:11.5px; padding:5px 10px;">
+              Copy Batch Code
+            </button>
+          </div>
+          <code id="cc-batch-code-preview" class="batch-code-preview">BUNKR-TT1:...</code>
+        </div>
+
+        <div class="batch-import-row">
+          <input type="text" id="cc-batch-code-input" class="form-input" placeholder="Paste friend's BUNKR-TT1:... code" aria-label="Paste batch timetable code">
+          <button type="button" id="cc-apply-batch-btn" class="action-btn primary" style="white-space:nowrap;">
+            Apply Code
+          </button>
+        </div>
+        <div id="cc-batch-feedback" class="batch-feedback" style="display:none;"></div>
+      </section>
+
+      <section class="cc-card" id="cc-deadlines-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Upcoming Canvas Deadlines</h2>
+            <p class="card-sub">Synced locally from your Canvas Assignments &amp; Dashboard</p>
+          </div>
+          <span class="day-badge" id="cc-deadlines-count">0 due soon</span>
+        </div>
+
+        <div id="cc-deadlines-list" class="deadlines-list">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+    </div>
+
     <!-- Quick Launchpad -->
     <section class="cc-launchpad">
       <div class="launchpad-title">CAMPUS QUICK LAUNCHPAD</div>
@@ -281,7 +380,7 @@
 
     <!-- Footer -->
     <footer class="cc-footer">
-      <span>Bunkr 2.4.1 &bull; Private &amp; Local &bull; Semester ends: Dec 18, 2026</span>
+      <span id="cc-footer-text">Bunkr 2.4.2 &bull; Private &amp; Local &bull; Semester ends: Dec 18, 2026</span>
     </footer>
   </div>
 

@@ -292,6 +292,8 @@
       '.card',
       '.attendance-card',
       '.course-card',
+      '[class*="course-card"]',
+      'article[class*="card"]',
       '.subject-card',
       '[class*="attendance"]',
       '[class*="course-item"]',
@@ -303,11 +305,15 @@
     const subjects = [];
     const seenNames = new Set();
 
-    for (const card of elements) {
-      // Don't parse Bunkr injected UI or Canvas Gradebook / Assignments UI
-      if (card.closest('#bunkr-root') || card.id?.includes('bunkr') || card.closest('#attendmate-root') || card.id?.includes('attendmate')) continue;
-      if (card.closest('#grades_summary') || card.closest('#right-side') || card.closest('#right-side-wrapper') || card.closest('.assignment-list')) continue;
+    // Filter out outer wrapper containers that enclose 2+ distinct candidate cards with ratios
+    const leafCandidates = elements.filter((el) => {
+      if (el.closest('#bunkr-root') || el.id?.includes('bunkr') || el.closest('#attendmate-root') || el.id?.includes('attendmate')) return false;
+      if (el.closest('#grades_summary') || el.closest('#right-side') || el.closest('#right-side-wrapper') || el.closest('.assignment-list')) return false;
+      const nestedCards = elements.filter((other) => other !== el && el.contains(other) && extractAttendedAndTotalFromText(other.innerText));
+      return nestedCards.length < 2;
+    });
 
+    for (const card of leafCandidates) {
       // Extract title from headings or bold elements
       const titleEl = card.querySelector('h1, h2, h3, h4, h5, .title, .course-name, .subject-name, strong, [class*="font-semibold"], [class*="font-bold"]');
       if (!titleEl) continue;
@@ -317,19 +323,26 @@
         continue;
       }
 
-      const ratio = extractAttendedAndTotalFromText(card.innerText);
+      const cardText = card.innerText || '';
+      const ratio = extractAttendedAndTotalFromText(cardText);
       if (ratio) {
         seenNames.add(name);
+        const codeMatch = cardText.match(/\b([A-Z]{2,6}[-]?\d{2,4}[A-Z]?\d{0,4})\b/);
+        const sectionMatch = cardText.match(/\b(Sec(?:tion)?[-\s]?[A-Z0-9]+)\b/i);
+        const excusedMatch = cardText.match(/excused\s*[:\-–]?\s*(\d+(?:\.\d+)?)\s*%/i);
+
         subjects.push({
           id: `card_${subjects.length + 1}`,
           name,
-          code: '',
+          code: codeMatch ? codeMatch[1] : '',
+          section: sectionMatch ? sectionMatch[1] : '',
+          excusedPct: excusedMatch ? parseFloat(excusedMatch[1]) : 0,
           attended: ratio.attended,
           total: ratio.total,
           absent: Math.max(0, ratio.total - ratio.attended),
           percentage: (ratio.attended / ratio.total) * 100,
           element: card,
-          badgeTargetElement: titleEl.parentElement || card
+          badgeTargetElement: card
         });
       }
     }

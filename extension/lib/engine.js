@@ -597,19 +597,27 @@
       if (!prev) continue;
 
       if (prev.total > 0 && curr.total < prev.total) {
-        return {
-          drifted: true,
-          reason: `Total classes held for "${curr.name}" dropped from ${prev.total} to ${curr.total}.`,
-          type: 'held_dropped'
-        };
+        const heldDrop = prev.total - curr.total;
+        const heldDropRatio = heldDrop / prev.total;
+        if (curr.total === 0 || (heldDrop >= 3 && heldDropRatio > 0.15)) {
+          return {
+            drifted: true,
+            reason: `Total classes held for "${curr.name}" dropped from ${prev.total} to ${curr.total}.`,
+            type: 'held_dropped'
+          };
+        }
       }
 
       if (prev.attended > 0 && curr.attended < prev.attended) {
-        return {
-          drifted: true,
-          reason: `Attended classes for "${curr.name}" dropped from ${prev.attended} to ${curr.attended}.`,
-          type: 'attended_dropped'
-        };
+        const attendedDrop = prev.attended - curr.attended;
+        const attendedDropRatio = attendedDrop / prev.attended;
+        if ((prev.attended >= 3 && curr.attended === 0) || (attendedDrop >= 3 && attendedDropRatio > 0.15)) {
+          return {
+            drifted: true,
+            reason: `Attended classes for "${curr.name}" dropped from ${prev.attended} to ${curr.attended}.`,
+            type: 'attended_dropped'
+          };
+        }
       }
 
       if (prev.total >= 10 && curr.total > prev.total * 1.5) {
@@ -915,12 +923,403 @@
     return lines.join('\n');
   }
 
+  /**
+   * Dynamic Semester Remaining Teaching Summary
+   * Eliminates hardcoded teaching-day and session counts in UI banners & popups.
+   */
+  function getRemainingTeachingSummary(fromDate = new Date(), customTimetable = null) {
+    const currentTimetable = customTimetable || activeTimetable || defaultTimetable;
+    const slotsMap = (currentTimetable && currentTimetable.SLOTS) ? currentTimetable.SLOTS : {};
+    let semStart = new Date(2026, 7, 10, 0, 0, 0);
+    let endDate = new Date(2026, 11, 18, 23, 59, 59);
+
+    if (currentTimetable) {
+      const startRaw = currentTimetable.startDate || (currentTimetable.SEMESTER && currentTimetable.SEMESTER.startDate);
+      const endRaw = currentTimetable.endDate || (currentTimetable.SEMESTER && currentTimetable.SEMESTER.endDate);
+      const ps = parseDateString(startRaw, false);
+      const pe = parseDateString(endRaw, true);
+      if (ps) semStart = ps;
+      if (pe) endDate = pe;
+    }
+
+    let refDate = new Date(fromDate);
+    const expectedYear = semStart.getFullYear();
+    if (isNaN(refDate.getTime())) {
+      refDate = new Date(expectedYear, 10, 3, 10, 0, 0);
+    } else if (refDate.getFullYear() !== expectedYear) {
+      refDate = new Date(expectedYear, refDate.getMonth(), refDate.getDate(), refDate.getHours(), refDate.getMinutes());
+    }
+
+    let teachingDaysLeft = 0;
+    let totalClassesLeft = 0;
+
+    if (refDate <= endDate) {
+      const startCursor = refDate < semStart ? new Date(semStart) : new Date(refDate);
+      const curTimeMinutes = startCursor.getHours() * 60 + startCursor.getMinutes();
+
+      // Count remaining sessions today
+      const todaySessions = getTodaysClasses(startCursor, currentTimetable).filter((c) => {
+        const [h, m] = c.time.split(':').map(Number);
+        return (h * 60 + m) > curTimeMinutes;
+      });
+      if (todaySessions.length > 0) {
+        teachingDaysLeft += 1;
+        totalClassesLeft += todaySessions.length;
+      }
+
+      // Count future days
+      const iter = new Date(startCursor.getFullYear(), startCursor.getMonth(), startCursor.getDate() + 1, 9, 0, 0);
+      while (iter <= endDate) {
+        const daySessions = getTodaysClasses(iter, currentTimetable);
+        if (daySessions.length > 0) {
+          teachingDaysLeft += 1;
+          totalClassesLeft += daySessions.length;
+        }
+        iter.setDate(iter.getDate() + 1);
+      }
+    }
+
+    const endDateFormatted = endDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    const semesterTitle = (currentTimetable && (currentTimetable.semester || (currentTimetable.SEMESTER && currentTimetable.SEMESTER.semester))) || 'Diwali Semester 2026';
+    const subjectsCount = Object.keys(slotsMap).length;
+
+    return {
+      teachingDaysLeft,
+      totalClassesLeft,
+      subjectsCount,
+      endDateFormatted,
+      semesterTitle
+    };
+  }
+
+  /**
+   * Excused / Medical Leave Recovery Calculator
+   * Computes how many excused/duty leaves (converting absences into credited attendance
+   * without increasing total conducted sessions) are needed to reach targetPercentage.
+   */
+  function calculateExcusedRecovery(attended, total, targetPercentage = 75) {
+    if (total <= 0) return { neededExcused: 0, maxRecoverablePct: 100, alreadySafe: true };
+    const currentPct = (attended / total) * 100;
+    const minRequired = Math.ceil((targetPercentage / 100) * total);
+    const absent = Math.max(0, total - attended);
+    if (currentPct >= targetPercentage) {
+      return { neededExcused: 0, maxRecoverablePct: 100, alreadySafe: true };
+    }
+    const rawNeeded = Math.max(0, minRequired - attended);
+    return {
+      neededExcused: Math.min(rawNeeded, absent),
+      possible: rawNeeded <= absent,
+      maxRecoverablePct: total > 0 ? ((attended + absent) / total) * 100 : 100,
+      alreadySafe: false
+    };
+  }
+
+  /**
+   * Trip / Leave Date-Range Planner
+   * Simulates missing all scheduled classes across [startDate, endDate] using the active timetable,
+   * with optional medical/duty leave credit.
+   */
+  function simulateLeavePlan(subjects, startDateInput, endDateInput, options = {}) {
+    const rawSubjects = Array.isArray(subjects) ? subjects : [];
+    const targetPct = typeof options.targetPercentage === 'number' ? options.targetPercentage : 75;
+    const currentTimetable = options.timetable || activeTimetable || defaultTimetable;
+    const overrides = options.overrides || {};
+    const excusedLeaveCount = Math.max(0, parseInt(options.excusedLeaves, 10) || 0);
+
+    const startD = parseDateString(startDateInput, false);
+    const endD = parseDateString(endDateInput, true);
+
+    if (!startD || !endD || endD < startD) {
+      return {
+        valid: false,
+        error: 'End date must be on or after start date.',
+        days: [],
+        courses: [],
+        totalMissedSessions: 0
+      };
+    }
+
+    // Clamp overly long ranges to 45 days for responsiveness
+    const maxDays = 45;
+    const resolvedSubjects = applyOverrides(rawSubjects, overrides);
+
+    // Count scheduled sessions per subjectKey across [startD, endD]
+    const missedByKey = {};
+    const days = [];
+    const iter = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate(), 9, 0, 0);
+    let dayGuard = 0;
+
+    while (iter <= endD && dayGuard < maxDays) {
+      const dayClasses = getTodaysClasses(iter, currentTimetable);
+      const iso = `${iter.getFullYear()}-${String(iter.getMonth() + 1).padStart(2, '0')}-${String(iter.getDate()).padStart(2, '0')}`;
+      const dayLabel = iter.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const isBreak = isDateInDiwaliBreak(iter, currentTimetable);
+
+      days.push({
+        date: iso,
+        dayLabel,
+        isHoliday: isBreak || iter.getDay() === 0,
+        sessions: dayClasses
+      });
+
+      for (const cls of dayClasses) {
+        missedByKey[cls.subjectKey] = (missedByKey[cls.subjectKey] || 0) + 1;
+      }
+
+      iter.setDate(iter.getDate() + 1);
+      dayGuard++;
+    }
+
+    let overallAttBefore = 0;
+    let overallTotalBefore = 0;
+    let overallAttAfter = 0;
+    let overallTotalAfter = 0;
+    let totalMissedSessions = 0;
+
+    const courses = resolvedSubjects.map((s) => {
+      const matchKey = matchSubjectKeyInTimetable(s.name || s.code, currentTimetable);
+      const subjFromSlots = currentTimetable && currentTimetable.SLOTS && matchKey ? currentTimetable.SLOTS[matchKey] : null;
+      const acronym = (subjFromSlots && subjFromSlots.acronym) || (matchKey && SUBJECT_ACRONYMS[matchKey]) || s.code || s.name;
+      const attended = Math.max(0, Number(s.attended) || 0);
+      const total = Math.max(attended, Number(s.total) || 0);
+      const missed = matchKey ? (missedByKey[matchKey] || 0) : 0;
+
+      // Excused leave applies up to missed count for this course
+      const excusedApplied = Math.min(missed, excusedLeaveCount);
+      const afterAttended = attended + excusedApplied;
+      const afterTotal = total + missed;
+
+      const beforePct = total > 0 ? (attended / total) * 100 : 100;
+      const afterPct = afterTotal > 0 ? (afterAttended / afterTotal) * 100 : beforePct;
+      const deltaPct = afterPct - beforePct;
+
+      const safeBefore = beforePct >= targetPct;
+      const safeAfter = afterPct >= targetPct;
+      const droppedBelowTarget = safeBefore && !safeAfter;
+      const recoveryClasses = calculateClassesNeeded(afterAttended, afterTotal, targetPct);
+      const excusedRecovery = calculateExcusedRecovery(afterAttended, afterTotal, targetPct);
+
+      overallAttBefore += attended;
+      overallTotalBefore += total;
+      overallAttAfter += afterAttended;
+      overallTotalAfter += afterTotal;
+      totalMissedSessions += missed;
+
+      return {
+        name: s.name,
+        code: s.code || '',
+        acronym,
+        matchKey,
+        attended,
+        total,
+        missed,
+        excusedApplied,
+        afterAttended,
+        afterTotal,
+        beforePct,
+        afterPct,
+        deltaPct,
+        safeBefore,
+        safeAfter,
+        droppedBelowTarget,
+        recoveryClasses,
+        excusedLeavesToSave: excusedRecovery.neededExcused
+      };
+    });
+
+    const overallBeforePct = overallTotalBefore > 0 ? (overallAttBefore / overallTotalBefore) * 100 : 0;
+    const overallAfterPct = overallTotalAfter > 0 ? (overallAttAfter / overallTotalAfter) * 100 : overallBeforePct;
+    const overallDeltaPct = overallAfterPct - overallBeforePct;
+
+    const atRiskCourses = courses.filter((c) => c.missed > 0 && !c.safeAfter);
+    const newlyAtRisk = courses.filter((c) => c.droppedBelowTarget);
+    const affectedCourses = courses.filter((c) => c.missed > 0);
+
+    let verdict = 'Safe to go';
+    let verdictTone = 'safe';
+    if (totalMissedSessions === 0) {
+      verdict = 'No scheduled classes in this window';
+      verdictTone = 'safe';
+    } else if (newlyAtRisk.length > 0) {
+      verdict = `Caution: ${newlyAtRisk.length} course${newlyAtRisk.length === 1 ? '' : 's'} drop below ${targetPct}%`;
+      verdictTone = 'danger';
+    } else if (atRiskCourses.length > 0) {
+      verdict = `Watch: ${atRiskCourses.length} course${atRiskCourses.length === 1 ? '' : 's'} already below ${targetPct}%`;
+      verdictTone = 'warning';
+    }
+
+    const startLabel = startD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const endLabel = endD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    return {
+      valid: true,
+      startLabel,
+      endLabel,
+      daysCount: days.length,
+      teachingDaysMissed: days.filter((d) => d.sessions.length > 0).length,
+      totalMissedSessions,
+      targetPercentage: targetPct,
+      excusedLeaveCount,
+      overallBeforePct,
+      overallAfterPct,
+      overallDeltaPct,
+      verdict,
+      verdictTone,
+      days,
+      courses,
+      affectedCourses,
+      atRiskCourses,
+      newlyAtRisk
+    };
+  }
+
+  /**
+   * Plain-text WhatsApp-ready Trip Plan summary
+   */
+  function generateTripShareText(plan) {
+    if (!plan || !plan.valid) return '';
+    const lines = [];
+    lines.push(`Bunkr Trip Plan • ${plan.startLabel} to ${plan.endLabel}`);
+    lines.push(`Verdict: ${plan.verdict}`);
+    lines.push(`Overall: ${plan.overallBeforePct.toFixed(1)}% -> ${plan.overallAfterPct.toFixed(1)}% (${plan.totalMissedSessions} classes missed)`);
+    if (plan.affectedCourses.length > 0) {
+      lines.push('');
+      lines.push('Course Impact:');
+      plan.affectedCourses.forEach((c) => {
+        const tag = c.safeAfter
+          ? 'Safe'
+          : (c.excusedLeavesToSave > 0 ? `Below ${plan.targetPercentage}% (needs ${c.excusedLeavesToSave} excused or ${c.recoveryClasses} attended)` : `Below ${plan.targetPercentage}%`);
+        lines.push(`• ${c.acronym}: ${c.beforePct.toFixed(1)}% -> ${c.afterPct.toFixed(1)}% (-${c.missed} cls) · ${tag}`);
+      });
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * Batch Timetable Share Code Encoder / Decoder (BUNKR-TT1:...)
+   * Lets one class rep configure a section timetable and drop a 1-line code in WhatsApp.
+   */
+  function encodeBatchCode(timetableObj) {
+    const src = timetableObj || activeTimetable || defaultTimetable;
+    if (!src || !src.SLOTS) return '';
+
+    const compactSlots = {};
+    for (const [key, subj] of Object.entries(src.SLOTS)) {
+      if (!subj || !Array.isArray(subj.slots)) continue;
+      compactSlots[key] = {
+        n: subj.name || key,
+        c: subj.code || '',
+        a: subj.acronym || SUBJECT_ACRONYMS[key] || '',
+        s: subj.slots.map((sl) => [sl.day, sl.time, sl.endTime || '', sl.room || ''])
+      };
+    }
+
+    const payload = {
+      v: 1,
+      p: src.program || (src.SEMESTER && src.SEMESTER.program) || 'Rishihood University',
+      sec: src.section || 'Custom',
+      sem: src.semester || (src.SEMESTER && src.SEMESTER.semester) || 'Semester I',
+      sd: src.startDate || (src.SEMESTER && src.SEMESTER.startDate) || '2026-08-10',
+      ed: src.endDate || (src.SEMESTER && src.SEMESTER.endDate) || '2026-12-18',
+      sl: compactSlots
+    };
+
+    const json = JSON.stringify(payload);
+    let b64 = '';
+    if (typeof Buffer !== 'undefined') {
+      b64 = Buffer.from(json, 'utf8').toString('base64');
+    } else if (typeof btoa === 'function') {
+      b64 = btoa(unescape(encodeURIComponent(json)));
+    }
+    const urlSafe = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `BUNKR-TT1:${urlSafe}`;
+  }
+
+  function decodeBatchCode(codeStr) {
+    if (!codeStr || typeof codeStr !== 'string') {
+      return { ok: false, error: 'Please paste a valid BUNKR-TT1 batch code.' };
+    }
+    const trimmed = codeStr.trim();
+    if (!trimmed.startsWith('BUNKR-TT1:')) {
+      return { ok: false, error: 'Invalid code format. Batch codes start with "BUNKR-TT1:".' };
+    }
+
+    try {
+      const raw = trimmed.slice('BUNKR-TT1:'.length).replace(/-/g, '+').replace(/_/g, '/');
+      const padded = raw + '='.repeat((4 - (raw.length % 4)) % 4);
+      let json = '';
+      if (typeof Buffer !== 'undefined') {
+        json = Buffer.from(padded, 'base64').toString('utf8');
+      } else if (typeof atob === 'function') {
+        json = decodeURIComponent(escape(atob(padded)));
+      }
+      const parsed = JSON.parse(json);
+      if (!parsed || parsed.v !== 1 || !parsed.sl || typeof parsed.sl !== 'object') {
+        return { ok: false, error: 'Batch code payload is incomplete or corrupted.' };
+      }
+
+      const SLOTS = {};
+      let totalWeekly = 0;
+      for (const [key, entry] of Object.entries(parsed.sl)) {
+        if (!entry || !Array.isArray(entry.s)) continue;
+        const slots = entry.s
+          .filter((arr) => Array.isArray(arr) && arr.length >= 2)
+          .map((arr) => ({
+            day: Number(arr[0]),
+            time: String(arr[1]),
+            endTime: arr[2] ? String(arr[2]) : '',
+            room: arr[3] ? String(arr[3]) : ''
+          }));
+        totalWeekly += slots.length;
+        SLOTS[key] = {
+          key,
+          name: String(entry.n || key),
+          code: String(entry.c || ''),
+          acronym: String(entry.a || ''),
+          sessionsPerWeek: slots.length,
+          slots
+        };
+      }
+
+      if (Object.keys(SLOTS).length === 0) {
+        return { ok: false, error: 'Batch code contains 0 subjects.' };
+      }
+
+      const timetable = {
+        custom: true,
+        source: 'batch_code',
+        program: parsed.p || 'Rishihood University',
+        section: parsed.sec || 'Shared Batch',
+        semester: parsed.sem || 'Semester I',
+        startDate: parsed.sd || '2026-08-10',
+        endDate: parsed.ed || '2026-12-18',
+        weeklySessionsCount: totalWeekly,
+        subjectsCount: Object.keys(SLOTS).length,
+        SLOTS
+      };
+
+      return { ok: true, timetable };
+    } catch (err) {
+      return { ok: false, error: 'Could not decode batch code. Make sure the full code was copied.' };
+    }
+  }
+
   return {
     formatFreshness,
     getDynamicRemainingClasses,
+    getRemainingTeachingSummary,
     calculateBunkWithDeficitRecovery,
     calculateBunkableClasses,
     calculateClassesNeeded,
+    calculateExcusedRecovery,
+    simulateLeavePlan,
+    generateTripShareText,
+    encodeBatchCode,
+    decodeBatchCode,
     detectDrift,
     applyOverrides,
     generateDiagnostics,

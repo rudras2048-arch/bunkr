@@ -51,6 +51,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const simDeltaBadge = document.getElementById('sim-delta-badge');
   const simAdviceText = document.getElementById('sim-advice-text');
 
+  const STANDALONE_DEMO_ATTENDANCE = {
+    timestamp: Date.now() - 180000,
+    overall: { attended: 118, total: 137, percentage: 86.1 },
+    subjects: [
+      { id: 'kpmg', name: 'KPMG/Edept Workshop Certification Program', code: 'CSDS-2601', attended: 1, total: 3, absent: 2, percentage: 33.3, excusedPct: 0 },
+      { id: 'psp', name: 'Problem Solving and Programming', code: 'CSD02C1002', attended: 34, total: 41, absent: 7, percentage: 82.9, excusedPct: 0 },
+      { id: 'society', name: 'Self and Society I', code: 'RSPRFC1002', attended: 9, total: 10, absent: 1, percentage: 90.0, excusedPct: 0 },
+      { id: 'wad', name: 'Web Application Development I', code: 'CSD02C1003', attended: 36, total: 40, absent: 4, percentage: 90.0, excusedPct: 0 },
+      { id: 'cfn', name: 'Computer fundamentals and networking', code: 'CSD02C1004', attended: 19, total: 22, absent: 3, percentage: 86.4, excusedPct: 0 },
+      { id: 'social', name: 'Social Communication I', code: 'RSPRFC1003', attended: 19, total: 21, absent: 2, percentage: 90.5, excusedPct: 10 }
+    ]
+  };
+
+  const rishihoodRemaining = {
+    'problem solving': 18,
+    'psp': 18,
+    'web application': 17,
+    'wad': 17,
+    'mathematics': 17,
+    'math': 17,
+    'social communication': 10,
+    'networking': 9,
+    'cfn': 9,
+    'understanding india': 7,
+    'kpmg': 7,
+    'self and society': 4
+  };
+
   // Initialize
   init();
 
@@ -66,7 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'lastSync',
         'nudgesEnabled',
         'nudgeLeadMinutes',
-        'customTimetable'
+        'customTimetable',
+        'canvas_assignments'
       ], (res) => {
         const engine = window.BunkrEngine || window.AttendMateEngine;
         if (res.customTimetable && engine) {
@@ -98,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         queryActiveTab();
         updateFreshnessText();
         renderTodayClasses();
+        renderPopupDeadlines(res.canvas_assignments);
       });
 
       // Listen for reactive storage updates across extension tabs
@@ -117,6 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
           attendanceData = changes.cachedAttendance.newValue;
           renderAll();
         }
+        if (changes.canvas_assignments) {
+          renderPopupDeadlines(changes.canvas_assignments.newValue);
+        }
         if (changes.nudgesEnabled !== undefined && popupNudgeToggle) {
           nudgesEnabled = Boolean(changes.nudgesEnabled.newValue);
           popupNudgeToggle.checked = nudgesEnabled;
@@ -127,13 +160,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     } else {
+      attendanceData = STANDALONE_DEMO_ATTENDANCE;
+      lastSyncTimestamp = STANDALONE_DEMO_ATTENDANCE.timestamp;
+      if (connectionStatus) {
+        connectionStatus.textContent = '🟢 Rishiverse Preview Data';
+      }
+      renderAll();
       updateFreshnessText();
       renderTodayClasses();
+      renderPopupDeadlines(null);
     }
 
     setupTabs();
     setupTargetButtons();
     setupSimulatorControls();
+    setupTripSimulatorControls();
     setupActionButtons();
     setupNudgeControls();
 
@@ -343,6 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderForecastList(effectiveSubjects);
     populateSimulatorSelect(effectiveSubjects);
     updateSimulation();
+    renderPopupTripSimulation();
   }
 
   function renderSubjectsList(subjects) {
@@ -416,24 +458,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const rishihoodRemaining = {
-    'problem solving': 18,
-    'psp': 18,
-    'web application': 17,
-    'wad': 17,
-    'mathematics': 17,
-    'math': 17,
-    'social communication': 10,
-    'networking': 9,
-    'cfn': 9,
-    'understanding india': 7,
-    'kpmg': 7,
-    'self and society': 4
-  };
-
   function renderForecastList(subjects) {
     const forecastList = document.getElementById('forecast-list');
     if (!forecastList) return;
+
+    const engine = window.BunkrEngine || window.AttendMateEngine;
+    const summary = engine && typeof engine.getRemainingTeachingSummary === 'function'
+      ? engine.getRemainingTeachingSummary(new Date())
+      : { semesterTitle: 'Diwali Semester 2026', endDateFormatted: 'Dec 18, 2026', teachingDaysLeft: 21, totalClassesLeft: 89 };
+
+    const semTitleEl = document.getElementById('forecast-sem-title');
+    const semStatsEl = document.getElementById('forecast-sem-stats');
+    if (semTitleEl) semTitleEl.textContent = `${summary.semesterTitle} Ends: ${summary.endDateFormatted}`;
+    if (semStatsEl) semStatsEl.textContent = `${summary.teachingDaysLeft} teaching days remaining • ${summary.totalClassesLeft} scheduled classes`;
 
     if (!subjects || subjects.length === 0) {
       forecastList.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:#94A3B8;">No courses to forecast yet.</div>`;
@@ -441,7 +478,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     forecastList.innerHTML = subjects.map((s) => {
-      const engine = window.BunkrEngine || window.AttendMateEngine;
       const match = Object.keys(rishihoodRemaining).find((k) => s.name.toLowerCase().includes(k));
       const remaining = engine && typeof engine.getDynamicRemainingClasses === 'function'
         ? engine.getDynamicRemainingClasses(s.name)
@@ -477,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="subj-item-pct" style="color:${badgeColor}; font-size:11px;">${badgeText}</span>
           </div>
           <div class="subj-item-bottom">
-            <span>${remaining} classes left till Dec 18</span>
+            <span>${remaining} classes left till ${summary.endDateFormatted}</span>
             <span style="font-size:11px; color:#94A3B8;">Must attend: ${mustAttend}</span>
           </div>
         </div>
@@ -579,11 +615,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderAll();
 
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]?.id) {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_TARGET', targetPercentage });
-          }
-        });
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]?.id) {
+              chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_TARGET', targetPercentage });
+            }
+          });
+        }
       });
     });
   }
@@ -615,6 +653,121 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function setupTripSimulatorControls() {
+    const classesBtn = document.getElementById('sim-mode-classes-btn');
+    const tripBtn = document.getElementById('sim-mode-trip-btn');
+    const classesPane = document.getElementById('sim-classes-pane');
+    const tripPane = document.getElementById('sim-trip-pane');
+    const startInput = document.getElementById('popup-trip-start');
+    const endInput = document.getElementById('popup-trip-end');
+    const excusedCheck = document.getElementById('popup-trip-excused');
+
+    if (startInput && endInput && !startInput.value) {
+      const s = new Date();
+      s.setDate(s.getDate() + 1);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 2);
+      const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      startInput.value = fmt(s);
+      endInput.value = fmt(e);
+    }
+
+    const setMode = (mode) => {
+      if (classesBtn) classesBtn.classList.toggle('active', mode === 'classes');
+      if (tripBtn) tripBtn.classList.toggle('active', mode === 'trip');
+      if (classesPane) classesPane.style.display = mode === 'classes' ? 'flex' : 'none';
+      if (tripPane) tripPane.style.display = mode === 'trip' ? 'flex' : 'none';
+      if (mode === 'trip') renderPopupTripSimulation();
+    };
+
+    if (classesBtn) classesBtn.addEventListener('click', () => setMode('classes'));
+    if (tripBtn) tripBtn.addEventListener('click', () => setMode('trip'));
+    [startInput, endInput, excusedCheck].forEach((el) => {
+      if (el) el.addEventListener('change', renderPopupTripSimulation);
+    });
+  }
+
+  function renderPopupTripSimulation() {
+    const engine = window.BunkrEngine || window.AttendMateEngine;
+    const startInput = document.getElementById('popup-trip-start');
+    const endInput = document.getElementById('popup-trip-end');
+    const excusedCheck = document.getElementById('popup-trip-excused');
+    const verdictEl = document.getElementById('popup-trip-verdict');
+    const listEl = document.getElementById('popup-trip-list');
+
+    if (!engine || !startInput || !endInput || !verdictEl || !listEl || !attendanceData) return;
+
+    const effectiveSubjects = applyOverridesToSubjects(attendanceData.subjects || []);
+    const plan = engine.simulateLeavePlan(effectiveSubjects, startInput.value, endInput.value, {
+      targetPercentage,
+      excusedLeaves: excusedCheck && excusedCheck.checked ? 1 : 0
+    });
+
+    if (!plan.valid) {
+      verdictEl.className = 'popup-trip-verdict danger';
+      verdictEl.textContent = plan.error || 'Select a valid range';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    verdictEl.className = `popup-trip-verdict ${plan.verdictTone}`;
+    verdictEl.textContent = `${plan.verdict} (${plan.overallBeforePct.toFixed(1)}% → ${plan.overallAfterPct.toFixed(1)}%, -${plan.totalMissedSessions} cls)`;
+
+    if (plan.affectedCourses.length === 0) {
+      listEl.innerHTML = `<div class="popup-trip-row"><span>No scheduled classes in range</span><strong>0 missed</strong></div>`;
+      return;
+    }
+
+    listEl.innerHTML = plan.affectedCourses.map((c) => {
+      const color = c.safeAfter ? '#10B981' : '#EF4444';
+      return `
+        <div class="popup-trip-row">
+          <span><strong>${c.acronym}</strong> (-${c.missed})</span>
+          <span style="color:${color}; font-weight:700;">${c.beforePct.toFixed(0)}% → ${c.afterPct.toFixed(1)}%</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderPopupDeadlines(storedAssignments) {
+    const strip = document.getElementById('popup-deadlines-strip');
+    const badge = document.getElementById('popup-deadlines-badge');
+    const itemsEl = document.getElementById('popup-deadlines-items');
+    if (!strip || !badge || !itemsEl) return;
+
+    const nowMs = Date.now();
+    const horizonMs = 48 * 3600000;
+    let list = Array.isArray(storedAssignments) ? storedAssignments : [];
+    let urgent = list
+      .filter((a) => a && a.dueAt && !a.submitted)
+      .map((a) => ({
+        title: a.title || a.name || 'Assignment',
+        dueMs: new Date(a.dueAt).getTime()
+      }))
+      .filter((a) => !isNaN(a.dueMs) && a.dueMs >= nowMs && a.dueMs <= nowMs + horizonMs)
+      .sort((a, b) => a.dueMs - b.dueMs)
+      .slice(0, 3);
+
+    if (urgent.length === 0 && typeof chrome === 'undefined') {
+      urgent = [
+        { title: 'PSP Lab 06: Recursion', dueMs: nowMs + 18 * 3600000 },
+        { title: 'WAD Grid Checkpoint', dueMs: nowMs + 42 * 3600000 }
+      ];
+    }
+
+    if (urgent.length === 0) {
+      strip.style.display = 'none';
+      return;
+    }
+
+    strip.style.display = 'block';
+    badge.textContent = String(urgent.length);
+    itemsEl.innerHTML = urgent.map((u) => {
+      const hrs = Math.max(1, Math.round((u.dueMs - nowMs) / 3600000));
+      return `<div class="popup-deadline-row"><span>${u.title}</span><small>in ${hrs}h</small></div>`;
+    }).join('');
+  }
+
   function setupActionButtons() {
     if (searchInput) {
       searchInput.addEventListener('input', () => {
@@ -629,40 +782,50 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof chrome !== 'undefined' && chrome.tabs && chrome.runtime) {
           chrome.tabs.create({ url: chrome.runtime.getURL('newtab/newtab.html') });
         } else {
-          window.open('../newtab/newtab.html', '_blank');
+          window.location.href = '../newtab/newtab.html';
         }
       });
     }
 
     if (openDrawerBtn) {
       openDrawerBtn.addEventListener('click', () => {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]?.id) {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'OPEN_DRAWER' });
-          }
-        });
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]?.id) {
+              chrome.tabs.sendMessage(tabs[0].id, { type: 'OPEN_DRAWER' });
+            }
+          });
+        } else {
+          window.location.href = '../demo/rishiverse_cards_demo.html';
+        }
       });
     }
 
     if (syncBtn) {
       syncBtn.addEventListener('click', () => {
         connectionStatus.textContent = 'Syncing...';
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]?.id) {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'TRIGGER_SCAN' }, () => {
-              setTimeout(() => {
-                chrome.storage.local.get(['cachedAttendance', 'lastSync'], (d) => {
-                  if (d.cachedAttendance) {
-                    attendanceData = d.cachedAttendance;
-                    lastSyncTimestamp = d.lastSync || d.cachedAttendance.timestamp;
-                    connectionStatus.textContent = 'Synced Just Now';
-                    renderAll();
-                  }
-                });
-              }, 600);
-            });
-          }
-        });
+        if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]?.id) {
+              chrome.tabs.sendMessage(tabs[0].id, { type: 'TRIGGER_SCAN' }, () => {
+                setTimeout(() => {
+                  chrome.storage.local.get(['cachedAttendance', 'lastSync'], (d) => {
+                    if (d.cachedAttendance) {
+                      attendanceData = d.cachedAttendance;
+                      lastSyncTimestamp = d.lastSync || d.cachedAttendance.timestamp;
+                      connectionStatus.textContent = 'Synced Just Now';
+                      renderAll();
+                    }
+                  });
+                }, 600);
+              });
+            }
+          });
+        } else {
+          lastSyncTimestamp = Date.now();
+          connectionStatus.textContent = '🟢 Preview Synced';
+          renderAll();
+        }
       });
     }
 
@@ -847,18 +1010,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const calSyncBtn = document.getElementById('cal-sync-btn');
     if (calSyncBtn) {
       calSyncBtn.addEventListener('click', () => {
-        const calUrl = chrome.runtime.getURL('rishihood_classes_10min_alert.ics');
+        const calUrl = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL)
+          ? chrome.runtime.getURL('rishihood_classes_10min_alert.ics')
+          : '../rishihood_classes_10min_alert.ics';
         const a = document.createElement('a');
         a.href = calUrl;
         a.download = 'Rishihood_Classes_10Min_Alerts.ics';
+        document.body.appendChild(a);
         a.click();
+        a.remove();
 
         const origText = calSyncBtn.innerHTML;
-        calSyncBtn.innerHTML = '✅ Downloaded! Opening Google Calendar...';
+        calSyncBtn.innerHTML = '✅ Downloaded .ics (10m Alerts)';
         setTimeout(() => {
-          window.open('https://calendar.google.com/calendar/r/settings/export', '_blank');
           calSyncBtn.innerHTML = origText;
-        }, 1200);
+        }, 1800);
       });
     }
   }
@@ -1006,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
         chrome.tabs.create({ url: chrome.runtime.getURL('newtab/newtab.html?modal=schedule') });
       } else {
-        window.open('../newtab/newtab.html?modal=schedule', '_blank');
+        window.location.href = '../newtab/newtab.html?modal=schedule';
       }
     });
   }

@@ -502,8 +502,8 @@ body {
 
 /* Phase 3: Compact Projection Box & Coach Pill */
 .popup-proj-box {
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--am-surface-secondary);
+  border: 1px solid var(--am-hairline);
   border-radius: 8px;
   padding: 8px 10px;
   margin-top: 10px;
@@ -520,8 +520,8 @@ body {
 .popup-stale-pill {
   font-size: 9px;
   font-weight: 600;
-  background: rgba(245, 158, 11, 0.2);
-  color: #FBBF24;
+  background: rgba(245, 158, 11, 0.16);
+  color: #B45309;
   padding: 1px 4px;
   border-radius: 4px;
 }
@@ -532,14 +532,14 @@ body {
   padding: 1px 6px;
   border-radius: 10px;
   background: rgba(16, 185, 129, 0.15);
-  color: #34D399;
+  color: #047857;
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .popup-coach-pill.warning {
   background: rgba(245, 158, 11, 0.15);
-  color: #FBBF24;
-  border-color: rgba(245, 158, 11, 0.3);
+  color: #B45309;
+  border-color: rgba(245, 158, 11, 0.35);
 }
 
 .popup-proj-stats {
@@ -547,6 +547,160 @@ body {
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #CBD5E1;
+  color: var(--am-label-primary);
 }
+
+.sim-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: var(--am-surface-secondary);
+  padding: 3px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.sim-mode-btn {
+  border: none;
+  background: transparent;
+  color: var(--am-label-secondary);
+  font-family: var(--sf-font);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sim-mode-btn.active {
+  background: var(--am-accent);
+  color: #FFFFFF;
+}
+
+.popup-trip-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.popup-trip-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--am-label-secondary);
+}
+
+.popup-trip-excused {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--am-label-secondary);
+  margin: 4px 0;
+  cursor: pointer;
+}
+
+.popup-trip-verdict {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.popup-trip-verdict.warning {
+  background: rgba(245, 158, 11, 0.14);
+  color: #B45309;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.popup-trip-verdict.danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #B91C1C;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.popup-trip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.popup-trip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: var(--am-surface);
+  border: 0.5px solid var(--am-hairline);
+  font-size: 11px;
+}
+
+.popup-deadlines-strip {
+  background: var(--am-surface);
+  border: 1px solid var(--am-hairline);
+  border-radius: 10px;
+  padding: 9px 11px;
+  margin-top: 8px;
+}
+
+.popup-deadlines-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--am-label-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 5px;
+}
+
+.popup-deadlines-badge {
+  background: rgba(239, 68, 68, 0.14);
+  color: #B91C1C;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.popup-deadlines-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.popup-deadline-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--am-label-primary);
+}
+
+.popup-deadline-row small {
+  color: var(--am-label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-color-scheme: dark) {
+  .popup-coach-pill {
+    color: #34D399;
+  }
+  .popup-coach-pill.warning {
+    color: #FBBF24;
+  }
+  .popup-deadlines-badge {
+    background: rgba(239, 68, 68, 0.22);
+    color: #FCA5A5;
+  }
+}
+
 
