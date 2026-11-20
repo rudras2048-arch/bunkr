@@ -1,0 +1,108 @@
+{
+  "institution": "Rishihood University",
+  "program": "B.Tech - CSE (Data Science)",
+  "semester": "Semester I (Diwali Semester 2026-27)",
+  "academicSession": "2026-2027",
+  "semesterEndDate": "2026-12-08",
+  "diwaliBreak": {
+    "start": "2026-11-06",
+    "end": "2026-11-13"
+  },
+  "remainingTeachingDays": 21,
+  "totalRemainingClasses": 89,
+  "subjects": [
+    {
+      "name": "Mathematics-I (Foundation)",
+      "acronym": "MATH1",
+      "room": "A610",
+      "targetAttendance": 75,
+      "remainingClasses": 17,
+      "schedule": [
+        { "day": "tuesday", "startTime": "09:00", "endTime": "10:00", "room": "A610" },
+        { "day": "tuesday", "startTime": "11:20", "endTime": "12:20", "room": "A610" },
+        { "day": "wednesday", "startTime": "09:00", "endTime": "10:00", "room": "A610" },
+        { "day": "friday", "startTime": "11:20", "endTime": "12:20", "room": "A610" }
+      ]
+    },
+    {
+      "name": "Problem Solving and Programming",
+      "acronym": "PSP",
+      "room": "A603",
+      "targetAttendance": 75,
+      "remainingClasses": 18,
+      "schedule": [
+        { "day": "monday", "startTime": "13:30", "endTime": "15:00", "room": "A603" },
+        { "day": "tuesday", "startTime": "13:30", "endTime": "15:00", "room": "A408" },
+        { "day": "wednesday", "startTime": "13:30", "endTime": "15:00", "room": "A603" },
+        { "day": "thursday", "startTime": "13:30", "endTime": "15:00", "room": "A603" }
+      ]
+    },
+    {
+      "name": "Web Application Development - I",
+      "acronym": "WAD1",
+      "room": "A603",
+      "targetAttendance": 75,
+      "remainingClasses": 17,
+      "schedule": [
+        { "day": "monday", "startTime": "15:30", "endTime": "17:00", "room": "A603" },
+        { "day": "tuesday", "startTime": "15:30", "endTime": "17:00", "room": "A301" },
+        { "day": "wednesday", "startTime": "15:30", "endTime": "17:00", "room": "A603" },
+        { "day": "friday", "startTime": "15:30", "endTime": "17:00", "room": "A610" }
+      ]
+    },
+    {
+      "name": "Social Communication (RFP)",
+      "acronym": "SOCCOMM",
+      "room": "RFP",
+      "targetAttendance": 75,
+      "remainingClasses": 10,
+      "schedule": [
+        { "day": "monday", "startTime": "10:10", "endTime": "11:10", "room": "RFP" },
+        { "day": "tuesday", "startTime": "10:10", "endTime": "11:10", "room": "RFP" }
+      ]
+    },
+    {
+      "name": "Computer Fundamentals and Networking",
+      "acronym": "CFN",
+      "room": "A610",
+      "targetAttendance": 75,
+      "remainingClasses": 9,
+      "schedule": [
+        { "day": "monday", "startTime": "11:20", "endTime": "12:20", "room": "A610" },
+        { "day": "wednesday", "startTime": "11:20", "endTime": "12:20", "room": "A610" }
+      ]
+    },
+    {
+      "name": "Understanding India (RFP)",
+      "acronym": "UNDINDIA",
+      "room": "RFP",
+      "targetAttendance": 75,
+      "remainingClasses": 7,
+      "schedule": [
+        { "day": "thursday", "startTime": "09:00", "endTime": "11:00", "room": "RFP" },
+        { "day": "friday", "startTime": "09:00", "endTime": "11:00", "room": "RFP" }
+      ]
+    },
+    {
+      "name": "KPMG/Edept Workshop Certification Program",
+      "acronym": "KPMG",
+      "room": "A603",
+      "targetAttendance": 75,
+      "remainingClasses": 7,
+      "schedule": [
+        { "day": "thursday", "startTime": "15:30", "endTime": "17:00", "room": "A603" },
+        { "day": "friday", "startTime": "13:30", "endTime": "15:00", "room": "A610" }
+      ]
+    },
+    {
+      "name": "Self and Society I (RFP)",
+      "acronym": "SELFSOC",
+      "room": "RFP",
+      "targetAttendance": 75,
+      "remainingClasses": 4,
+      "schedule": [
+        { "day": "wednesday", "startTime": "10:10", "endTime": "11:10", "room": "RFP" }
+      ]
+    }
+  ]
+}

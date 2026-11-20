@@ -1,0 +1,90 @@
+{
+  "manifest_version": 3,
+  "name": "Bunkr - Rishiverse & Canvas Bunk Calculator",
+  "short_name": "Bunkr",
+  "version": "2.4.2",
+  "description": "Smart Attendance Tracker, Bunk Meter, Proactive Class Nudges, Semester Projection & WhatsApp Status Sharing for Rishihood University (Rishiverse) and Canvas LMS.",
+  "author": "Bunkr Team",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "notifications",
+    "alarms"
+  ],
+  "host_permissions": [
+    "*://rishiverse.rishihood.edu.in/*",
+    "*://rishihood.rishiverse.com/*",
+    "*://*.rishiverse.com/*",
+    "*://*.rishihood.edu.in/*",
+    "*://*.instructure.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
+    "file:///*"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Bunkr Attendance Tracker"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://rishiverse.rishihood.edu.in/*",
+        "*://rishihood.rishiverse.com/*",
+        "*://*.rishiverse.com/*",
+        "*://*.rishihood.edu.in/*",
+        "*://*.instructure.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "file:///*"
+      ],
+      "js": [
+        "data/timetable.js",
+        "lib/engine.js",
+        "content/math.js",
+        "content/parser.js",
+        "content/ui.js",
+        "content/canvas_grades.js",
+        "content/canvas_assignments.js",
+        "content/canvas_files.js",
+        "content/canvas_router.js",
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "rishihood_classes_10min_alert.ics",
+        "icons/*"
+      ],
+      "matches": [
+        "*://rishiverse.rishihood.edu.in/*",
+        "*://rishihood.rishiverse.com/*",
+        "*://*.rishiverse.com/*",
+        "*://*.rishihood.edu.in/*",
+        "*://*.instructure.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "file:///*"
+      ]
+    }
+  ]
+}

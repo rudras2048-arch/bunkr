@@ -1,0 +1,8 @@
+Notes: Physics Lecture Notes & Times
+Semester Schedule Overview
+------------------------------------
+- Monday: 09:00 - 10:30 Modern Physics (Room: PHY101)
+- Monday: 11:00 - 12:30 Quantum Mechanics (Room: PHY102)
+- Wednesday: 09:00 - 10:30 Modern Physics (Room: PHY101)
+- Thursday: 11:00 - 12:30 Quantum Mechanics (Room: PHY102)
+- Friday: 14:00 - 16:00 Optics Laboratory (Room: OptLab)

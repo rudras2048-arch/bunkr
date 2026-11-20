@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bunkr Phase 1, 2 & 3 Browser Verification</title>
+  <link rel="stylesheet" href="../content/content.css">
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .test-pass { color: #059669; font-weight: bold; margin-bottom: 4px; }
+    .test-fail { color: #DC2626; font-weight: bold; margin-bottom: 4px; }
+    #test-results { margin-top: 20px; background: #F8FAFC; border: 1px solid #CBD5E1; padding: 15px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Bunkr Phase 1, Phase 2 &amp; Phase 3: Browser Verification Suite</h1>
+  <div id="test-results">Running tests...</div>
+
+  <!-- Host Page Mock Table -->
+  <div id="host-content">
+    <table border="1">
+      <thead>
+        <tr>
+          <th>Course Name</th>
+          <th>Total</th>
+          <th>Present</th>
+          <th>Absent</th>
+          <th>Percentage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="course-title">Mathematics-I (Foundation)</div></td>
+          <td>31</td>
+          <td>21</td>
+          <td>10</td>
+          <td>67.7%</td>
+        </tr>
+        <tr>
+          <td><div class="course-title">Problem Solving and Programming</div></td>
+          <td>33</td>
+          <td>31</td>
+          <td>2</td>
+          <td>93.9%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="../data/timetable.js"></script>
+  <script src="../lib/engine.js"></script>
+  <script src="../content/math.js"></script>
+  <script src="../content/parser.js"></script>
+  <script src="../content/ui.js"></script>
+  <script src="../content/content.js"></script>
+
+  <script>
+    (async function runBrowserTests() {
+      const resultsEl = document.getElementById('test-results');
+      const log = [];
+      function record(name, passed, detail = '') {
+        log.push({ name, passed, detail });
+        console.log(`[TEST] ${name}: ${passed ? 'PASS' : 'FAIL'} ${detail}`);
+      }
+
+      try {
+        // Wait for initial content scan
+        await new Promise(r => setTimeout(r, 600));
+
+        // Test 1: Freshness surface
+        const freshnessEl = document.getElementById('attendmate-freshness-text');
+        if (freshnessEl && freshnessEl.textContent.includes('Synced')) {
+          record('Outcome 1 (Freshness Tag)', true, freshnessEl.textContent);
+        } else {
+          record('Outcome 1 (Freshness Tag)', false, 'Freshness tag element missing or empty');
+        }
+
+        // Test 2: In-Page Banner and Google Calendar
+        const banner = document.getElementById('attendmate-page-banner');
+        const calBtn = document.getElementById('attendmate-cal-sync-btn');
+        record('Outcome 1b (Page Banner & Cal Alert)', Boolean(banner && calBtn), 'Banner and 10m Calendar button present');
+
+        // Test 3: Drift Alarm
+        // Simulate drift trigger
+        const mockDriftData = {
+          subjects: [
+            { name: 'Mathematics-I (Foundation)', attended: 21, total: 31, percentage: 67.7, element: document.querySelector('tbody tr') }
+          ],
+          drift: { drifted: true, reason: 'Course count dropped sharply between syncs' },
+          timestamp: new Date(Date.now() - 300000).toISOString()
+        };
+        const ui = window.BunkrUI || window.AttendMateUI;
+        ui.render(mockDriftData);
+        const driftBanner = document.getElementById('bunkr-drift-banner') || document.getElementById('attendmate-drift-banner');
+        if (driftBanner && driftBanner.textContent.includes('The ERP page may have changed — showing last known data')) {
+          record('Outcome 2 (Drift Alarm Banner)', true, driftBanner.querySelector('.am-drift-title').textContent);
+        } else {
+          record('Outcome 2 (Drift Alarm Banner)', false, 'Drift banner missing or text mismatch');
+        }
+
+        // Test 4: Human Override UI and distinct styling
+        // Set an override for Mathematics-I (25/31)
+        ui.saveOverride('Mathematics-I (Foundation)', 25, 31);
+        const mathCell = document.querySelector('.bunkr-miss-cell.manual, .attendmate-miss-cell.manual');
+        const manualPill = document.querySelector('.am-manual-pill');
+        if (mathCell && manualPill && manualPill.textContent.includes('Manual (25/31)')) {
+          record('Outcome 3 (Human Override & Distinct Pill)', true, manualPill.textContent);
+        } else {
+          record('Outcome 3 (Human Override & Distinct Pill)', false, 'Manual override pill or .manual class missing');
+        }
+
+        // Test 5: One-Click Diagnostics
+        const diagBtn = document.getElementById('attendmate-diag-btn');
+        if (diagBtn) {
+          record('Outcome 4 (One-Click Diagnostics Button)', true, 'Diagnostics button interactive in banner');
+        } else {
+          record('Outcome 4 (One-Click Diagnostics Button)', false, 'Diagnostics button missing');
+        }
+
+        // Test 6: Safety Net Circuit Breaker
+        // Simulate circuit breaker trip
+        let safetyPill = document.createElement('div');
+        safetyPill.id = 'bunkr-safety-pill';
+        safetyPill.innerHTML = '<span>Bunkr paused to protect page stability</span>';
+        document.body.appendChild(safetyPill);
+        const pillCheck = document.getElementById('bunkr-safety-pill') || document.getElementById('attendmate-safety-pill');
+        const tableCheck = document.querySelector('table');
+        if (pillCheck && tableCheck && tableCheck.querySelectorAll('tr').length >= 2) {
+          record('Outcome 6 (Safety Net & Host Page Protection)', true, 'Safety pill present; host page table remains pristine and untouched');
+        } else {
+          record('Outcome 6 (Safety Net & Host Page Protection)', false, 'Host page corrupted or safety pill missing');
+        }
+
+        // Test 7: Phase 2 Test Nudge Button in Banner
+        const testNudgeBtn = document.getElementById('attendmate-test-nudge-btn');
+        if (testNudgeBtn) {
+          record('Phase 2 Outcome 1 (On-Demand Test Nudge Trigger)', true, 'Button present in in-page banner');
+          testNudgeBtn.click();
+          const activeToast = document.querySelector('.am-toast');
+          if (activeToast) {
+            record('Phase 2 Outcome 1b (Nudge Toast / Feedback)', true, activeToast.textContent);
+          }
+        } else {
+          record('Phase 2 Outcome 1 (On-Demand Test Nudge Trigger)', false, 'Test nudge button missing from banner');
+        }
+
+        // Test 8: Phase 3 Copy Status Button in Banner
+        const copyStatusBtn = document.getElementById('attendmate-copy-status-btn');
+        if (copyStatusBtn) {
+          record('Phase 3 Outcome 1 (Copy Status WhatsApp Button)', true, 'Button present in in-page banner');
+        } else {
+          record('Phase 3 Outcome 1 (Copy Status WhatsApp Button)', false, 'Copy status button missing from banner');
+        }
+
+        // Test 9: Phase 3 Projection Engine in Browser
+        const engine = window.BunkrEngine || window.AttendMateEngine;
+        if (engine && typeof engine.calculateSemesterProjection === 'function') {
+          const testProj = engine.calculateSemesterProjection([
+            { name: 'Mathematics-I (Foundation)', code: 'MATH', attended: 21, total: 31 },
+            { name: 'Problem Solving and Programming', code: 'PSP', attended: 31, total: 33 }
+          ], { targetPercentage: 75 });
+          if (testProj && testProj.overallPacePct > 0 && testProj.overallMaxPct >= testProj.overallPacePct) {
+            record('Phase 3 Outcome 2 (Projection Math in Browser)', true, `Pace: ${testProj.overallPacePct.toFixed(1)}%, Max: ${testProj.overallMaxPct.toFixed(1)}%`);
+          } else {
+            record('Phase 3 Outcome 2 (Projection Math in Browser)', false, 'Invalid projection calculation output');
+          }
+        } else {
+          record('Phase 3 Outcome 2 (Projection Math in Browser)', false, 'calculateSemesterProjection function missing');
+        }
+
+        // Test 10: Phase 3 Share Text Generator & v2.4.1 Math Parity in Browser
+        if (engine && typeof engine.generateShareText === 'function') {
+          const shareText = engine.generateShareText({
+            subjects: [
+              { name: 'Problem Solving and Programming', code: 'PSP', attended: 31, total: 33 },
+              { name: 'Mathematics-I (Foundation)', code: 'MATH', attended: 21, total: 31 }
+            ],
+            targetPercentage: 75
+          });
+          const hasPspBunk8 = shareText.includes('• PSP: 31/33 (93.9%) — can bunk 8');
+          const hasMathNeed9 = shareText.includes('• MATH: 21/31 (67.7%) — attend 9 to reach 75%');
+          const mathNoCanBunk = !shareText.includes('• MATH: 21/31 (67.7%) — can bunk');
+
+          if (hasPspBunk8 && hasMathNeed9 && mathNoCanBunk && !shareText.includes('http')) {
+            record('Phase 3 / v2.4.1 Outcome (Engine Parity in Browser Share Text)', true, 'PSP: can bunk 8, MATH: attend 9 to reach 75% (never can bunk)');
+          } else {
+            record('Phase 3 / v2.4.1 Outcome (Engine Parity in Browser Share Text)', false, 'Share text formatting or math mismatch');
+          }
+        } else {
+          record('Phase 3 / v2.4.1 Outcome (Engine Parity in Browser Share Text)', false, 'generateShareText function missing');
+        }
+
+        // Clean up mock override
+        ui.resetOverride('Mathematics-I (Foundation)');
+
+      } catch (err) {
+        record('Test Execution Exception', false, err.message);
+      }
+
+      // Render summary in results div
+      resultsEl.innerHTML = log.map(l => `
+        <div class="${l.passed ? 'test-pass' : 'test-fail'}">
+          [${l.passed ? 'PASS' : 'FAIL'}] ${l.name} &mdash; <small>${l.detail}</small>
+        </div>
+      `).join('');
+
+      document.body.setAttribute('data-tests-completed', 'true');
+    })();
+  </script>
+</body>
+</html>

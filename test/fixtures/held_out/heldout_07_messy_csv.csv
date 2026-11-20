@@ -1,0 +1,6 @@
+"Day" , "Start Time" , "End Time" , "Course Title" , "Classroom Location"
+"Monday" , "09:00" , "10:30" , "Bioinformatics" , "BIO301"
+"Tuesday" , "11:00" , "12:30" , "Genomics" , "BIO302"
+"Wednesday" , "09:00" , "10:30" , "Bioinformatics" , "BIO301"
+"Thursday" , "11:00" , "12:30" , "Genomics" , "BIO302"
+"Friday" , "14:00" , "16:00" , "Computational Biology Lab" , "BioLab-2"

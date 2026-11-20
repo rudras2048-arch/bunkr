@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Studio — Bunkr</title>
+  <link rel="stylesheet" href="../newtab/newtab.css">
+  <style>
+    .studio-container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .studio-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    .studio-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="studio-container">
+    <!-- Header -->
+    <header class="studio-header">
+      <div class="cc-brand">
+        <img src="../icons/icon32.png" alt="Logo" class="cc-logo">
+        <div>
+          <h1 class="cc-title">Schedule Studio <span class="cc-badge">v2.4.1</span></h1>
+          <div class="cc-sub">Upload, preview, harmonize, and customize your weekly academic timetable</div>
+        </div>
+      </div>
+      <div class="studio-actions">
+        <a href="../newtab/newtab.html" class="action-btn secondary" style="text-decoration: none; font-size: 12px; padding: 6px 12px;">
+          ← Return to Command Center
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Workspace Card -->
+    <section class="cc-card" style="padding: 24px;">
+      <!-- Active Schedule Banner -->
+      <div id="schedule-status-banner" class="schedule-banner">
+        <div id="schedule-status-text">Loading current schedule...</div>
+        <button id="schedule-reset-btn" class="pill-btn danger" style="display: none; padding: 4px 10px; font-size: 11px;">Reset to Default</button>
+      </div>
+
+      <!-- Upload Drop Zone -->
+      <div class="drop-zone" id="schedule-drop-zone">
+        <div class="drop-icon">📁</div>
+        <div class="drop-title">Drag &amp; drop your timetable here, or <span class="drop-browse">browse</span></div>
+        <div class="drop-sub">Supports PDF (.pdf), Images (.png, .jpg, .webp), Text (.txt, .csv, .tsv), Calendar (.ics)</div>
+        <input type="file" id="schedule-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.tsv,.ics" style="display: none;">
+      </div>
+
+      <!-- Direct Text Paste Option -->
+      <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11.5px; color: #94A3B8;">🔒 Runs 100% locally in your browser &bull; Zero server uploads</span>
+        <button id="schedule-paste-toggle-btn" class="action-btn secondary" style="font-size: 11px; padding: 4px 10px;">
+          📝 Paste Schedule Text
+        </button>
+      </div>
+
+      <div id="schedule-paste-box" style="display: none; margin-top: 10px;">
+        <textarea id="schedule-paste-input" placeholder="Paste schedule text here, e.g.:
+Monday:
+  10:10 - 11:40 Social Communication (RFP)
+  13:30 - 15:00 Problem Solving (A603)
+Tuesday:
+  09:00 - 10:00 Mathematics-I (A610)" style="width: 100%; height: 90px; background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); border-radius: 8px; color: #F8FAFC; padding: 8px 10px; font-family: monospace; font-size: 11.5px; box-sizing: border-box;"></textarea>
+        <div style="margin-top: 6px; text-align: right;">
+          <button id="schedule-parse-paste-btn" class="action-btn primary" style="font-size: 11px; padding: 5px 12px;">Parse Pasted Text</button>
+        </div>
+      </div>
+
+      <!-- Parsing Loader / Alerts -->
+      <div id="schedule-loading" class="schedule-loading" style="display: none;">
+        <div class="spinner"></div>
+        <div id="schedule-loading-msg" style="margin-top: 8px; font-weight: 600;">Analyzing schedule...</div>
+      </div>
+      <div id="schedule-error-alert" class="schedule-alert danger" style="display: none;"></div>
+      <div id="schedule-success-alert" class="schedule-alert success" style="display: none;"></div>
+
+      <!-- Interactive Preview & Editor Section -->
+      <div id="schedule-preview-section" style="display: none; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <strong style="font-size: 14px; color: #F8FAFC;">Weekly Schedule Preview</strong>
+            <div id="schedule-summary-stats" style="font-size: 11.5px; color: #94A3B8;">Loading sessions...</div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="schedule-undo-btn" class="action-btn secondary" style="display: none; font-size: 11px; padding: 5px 10px;" title="Undo last change (Ctrl+Z / Cmd+Z)">↩️ Undo</button>
+            <button id="schedule-add-slot-btn" class="action-btn secondary" style="font-size: 11px; padding: 5px 10px;">+ Add Class</button>
+          </div>
+        </div>
+
+        <!-- Needs Review Banner -->
+        <div id="schedule-needs-review-banner" class="needs-review-banner" style="display: none;"></div>
+
+        <!-- Visual Weekly Grid -->
+        <div class="weekly-preview-grid" id="weekly-preview-grid">
+          <!-- Columns Mon - Sat populated dynamically -->
+        </div>
+
+        <!-- Course Harmonization Panel -->
+        <div id="course-harmonization-card" class="harmonization-card" style="display: none;">
+          <div class="harmonization-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 15px;">📚</span>
+              <div>
+                <div style="font-weight: 700; font-size: 12.5px; color: #F8FAFC;" id="harmonization-title">Course Harmonization</div>
+                <div style="font-size: 11px; color: #94A3B8;">Cross-referenced with ERP enrolled courses &amp; curriculum</div>
+              </div>
+            </div>
+            <span id="harmonization-summary-badge" class="pill-badge" style="font-size: 10.5px; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 12px; color: #CBD5E1;"></span>
+          </div>
+          <div class="harmonization-list" id="harmonization-list"></div>
+          <div id="harmonization-note" class="harmonization-note" style="display: none;"></div>
+        </div>
+
+        <!-- Save Action Footer -->
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--surface-border); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 11.5px; color: #94A3B8;">💾 Changes apply instantly to departures, nudges, and projections</span>
+          <button id="schedule-save-btn" class="action-btn primary" style="display: none; padding: 8px 18px; font-size: 13px;">💾 Save &amp; Apply Schedule</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="cc-footer">
+      <span>Bunkr v2.4.1 &bull; 100% Client-Side &bull; Private &amp; Local</span>
+    </footer>
+  </div>
+
+  <!-- Structured Add / Edit Slot Modal Form -->
+  <div id="slot-modal" class="modal-overlay" style="display: none; z-index: 10002;">
+    <div class="modal-dialog slot-modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;" id="slot-modal-icon">✏️</span>
+          <h3 class="modal-title" id="slot-modal-title">Edit Class Slot</h3>
+        </div>
+        <button class="modal-close" id="slot-modal-close" type="button" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="slot-editor-form" novalidate>
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <div id="slot-form-error" class="schedule-alert danger" style="display: none; margin-top: 0;"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="slot-form-day">Day of Week <span class="required" style="color:#EF4444;">*</span></label>
+            <select id="slot-form-day" class="form-input" required>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="slot-form-name">Course Name <span class="required" style="color:#EF4444;">*</span></label>
+            <input type="text" id="slot-form-name" class="form-input" placeholder="e.g. Data Structures &amp; Algorithms" required autocomplete="off">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="slot-form-start">Start Time (24h) <span class="required" style="color:#EF4444;">*</span></label>
+              <input type="time" id="slot-form-start" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="slot-form-end">End Time (24h) <span class="required" style="color:#EF4444;">*</span></label>
+              <input type="time" id="slot-form-end" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="slot-form-room">Room Code</label>
+            <input type="text" id="slot-form-room" class="form-input" placeholder="e.g. A603, Lab-3, RFP" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" id="slot-modal-cancel" class="action-btn secondary">Cancel</button>
+          <button type="submit" id="slot-form-submit" class="action-btn primary">Save Slot</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="schedule-toast" class="schedule-toast" style="display: none;"></div>
+
+  <script src="../data/timetable.js"></script>
+  <script src="../lib/engine.js"></script>
+  <script src="../lib/ocrad.js"></script>
+  <script src="../lib/schedule_parser.js"></script>
+  <script src="upload.js"></script>
+</body>
+</html>

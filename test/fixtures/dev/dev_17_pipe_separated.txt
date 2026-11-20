@@ -1,0 +1,8 @@
+# High Performance Systems Schedule
+
+| Day | Time | EndTime | Course | Room |
+| :--- | :--- | :--- | :--- | :--- |
+| Monday | 10:00 | 11:30 | Distributed Systems | D101 |
+| Tuesday | 14:00 | 15:30 | High Performance Computing | D102 |
+| Wednesday | 10:00 | 11:30 | Distributed Systems | D101 |
+| Thursday | 14:00 | 15:30 | High Performance Computing | D102 |

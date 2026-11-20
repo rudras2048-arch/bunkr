@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Center — Bunkr</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+  <div class="command-container">
+    <!-- Top Bar -->
+    <header class="cc-header">
+      <div class="cc-brand">
+        <img src="../icons/icon32.png" alt="Logo" class="cc-logo">
+        <div>
+          <h1 class="cc-title">Bunkr <span class="cc-badge">Command Center v2.4.1</span></h1>
+          <div class="cc-sub" id="cc-date-time">Loading date & time...</div>
+        </div>
+      </div>
+      <div class="cc-location">📍 Rishihood University &bull; Sonipat, Haryana</div>
+    </header>
+
+    <!-- Main Hero: Next Up Class / Nudge Status -->
+    <section class="cc-hero-card" id="cc-hero-card">
+      <div class="hero-label">NEXT CLASS ON SCHEDULE</div>
+      <div class="hero-title" id="hero-class-title">Checking timetable...</div>
+      <div class="hero-details" id="hero-class-details">Loading room & timing...</div>
+      <div class="hero-countdown" id="hero-class-countdown">--</div>
+    </section>
+
+    <!-- Semester Projection & Coach Section (Phase 3) -->
+    <section class="cc-card cc-projection-card" id="cc-projection-card">
+      <div class="card-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h2 class="card-title">Semester Projection &amp; Coach</h2>
+            <span id="proj-stale-badge" class="stale-badge" style="display: none;">⚠️ Based on last known data</span>
+          </div>
+          <p class="card-sub" id="proj-semester-sub">Forecast to semester finish (Dec 18, 2026) &bull; Target: <strong id="proj-target-val" style="color:#F8FAFC;">75%</strong></p>
+        </div>
+        <div class="proj-header-actions">
+          <button id="cc-copy-status-btn" class="action-btn success" title="Copy clean plain-text summary ready for WhatsApp">
+            📋 Copy Status (WhatsApp)
+          </button>
+        </div>
+      </div>
+
+      <!-- Projection Metric Pillars -->
+      <div class="proj-metrics-grid">
+        <div class="proj-metric-card">
+          <div class="proj-metric-label">CURRENT OVERALL</div>
+          <div class="proj-metric-val" id="proj-current-val">--%</div>
+          <div class="proj-metric-sub" id="proj-current-sub">-- attended of -- held</div>
+        </div>
+        <div class="proj-metric-card highlight">
+          <div class="proj-metric-label">AT CURRENT PACE</div>
+          <div class="proj-metric-val highlight" id="proj-pace-val">--%</div>
+          <div class="proj-metric-sub" id="proj-pace-sub">If attendance rate continues</div>
+        </div>
+        <div class="proj-metric-card">
+          <div class="proj-metric-label">MAX ATTAINABLE</div>
+          <div class="proj-metric-val" id="proj-max-val">--%</div>
+          <div class="proj-metric-sub" id="proj-max-sub">If attending all remaining</div>
+        </div>
+        <div class="proj-metric-card">
+          <div class="proj-metric-label">REMAINING SESSIONS</div>
+          <div class="proj-metric-val" id="proj-rem-val">--</div>
+          <div class="proj-metric-sub" id="proj-rem-sub">Teaching sessions till Dec 18</div>
+        </div>
+      </div>
+
+      <!-- Semester Complete Notice (Hidden until R = 0) -->
+      <div id="proj-complete-banner" class="complete-banner" style="display: none;">
+        🎓 <strong>Semester Complete</strong> — All teaching sessions have concluded. Final overall attendance is locked.
+      </div>
+
+      <!-- Attendance Coach: Speaks only when needed -->
+      <div class="coach-container">
+        <div class="coach-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="coach-icon">🎯</span>
+            <span class="coach-title">Attendance Coach</span>
+          </div>
+          <span class="coach-badge" id="coach-status-badge">Silence (Healthy)</span>
+        </div>
+        <div id="coach-callouts-list" class="coach-callouts">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Semester Academic Standing & SGPA Simulator Card -->
+    <section class="cc-card cc-sgpa-card" id="cc-sgpa-card">
+      <div class="card-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <h2 class="card-title">Semester Academic Standing &amp; SGPA Simulator</h2>
+            <span id="sgpa-status-badge" class="sgpa-sync-badge">Canvas Synced</span>
+            <span id="sgpa-as-of-badge" class="sgpa-as-of-badge">Curriculum baseline (0 of 8 courses updated)</span>
+          </div>
+          <p class="card-sub" id="sgpa-card-sub">Credit-weighted UGC CBCS 10-point SGPA forecaster &bull; 22 Semester Credits (Rishihood University)</p>
+        </div>
+        <div class="proj-header-actions" style="display: flex; align-items: center; gap: 8px;">
+          <!-- Scale Mode Toggle (UGC 10-Point Default vs Linear) -->
+          <div class="sgpa-scale-toggle" id="sgpa-scale-toggle" title="Select SGPA calculation scale">
+            <button type="button" class="pill-btn active" id="scale-ugc-btn" data-scale="ugc">UGC 10-Pt</button>
+            <button type="button" class="pill-btn" id="scale-linear-btn" data-scale="linear">Linear</button>
+          </div>
+          <span class="day-badge" id="sgpa-term-badge">Sem 1 &bull; 8 Courses</span>
+        </div>
+      </div>
+
+      <!-- SGPA Metric Pillars -->
+      <div class="proj-metrics-grid sgpa-metrics-grid">
+        <div class="proj-metric-card">
+          <div class="proj-metric-label">CURRENT LOCKED SGPA</div>
+          <div class="proj-metric-val" id="sgpa-current-val">--</div>
+          <div class="proj-metric-sub" id="sgpa-current-sub">--% credit-weighted</div>
+        </div>
+        <div class="proj-metric-card highlight">
+          <div class="proj-metric-label">TARGET SGPA</div>
+          <div class="proj-metric-val highlight" id="sgpa-target-val">8.00</div>
+          <div class="proj-metric-sub" id="sgpa-target-sub">80.0% goal</div>
+        </div>
+        <div class="proj-metric-card">
+          <div class="proj-metric-label">MAX ATTAINABLE SGPA</div>
+          <div class="proj-metric-val" id="sgpa-max-val">--</div>
+          <div class="proj-metric-sub" id="sgpa-max-sub">With 100% on remaining</div>
+        </div>
+        <div class="proj-metric-card">
+          <div class="proj-metric-label">TOTAL CREDITS</div>
+          <div class="proj-metric-val" id="sgpa-credits-val">22</div>
+          <div class="proj-metric-sub" id="sgpa-credits-sub">8 semester subjects</div>
+        </div>
+      </div>
+
+      <!-- Interactive Target Controls -->
+      <div class="sgpa-controls-section">
+        <div class="sgpa-controls-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 15px;">🎯</span>
+            <span style="font-weight: 700; font-size: 13px; color: #F8FAFC;">Adjust Target SGPA:</span>
+            <span id="sgpa-slider-bubble" class="sgpa-bubble">8.0 SGPA (80.0%)</span>
+          </div>
+          <div class="pills-group" id="sgpa-quick-pills">
+            <button class="pill-btn" data-sgpa="7.5">7.5</button>
+            <button class="pill-btn active" data-sgpa="8.0">8.0</button>
+            <button class="pill-btn" data-sgpa="8.5">8.5</button>
+            <button class="pill-btn" data-sgpa="9.0">9.0</button>
+          </div>
+        </div>
+        <div class="sgpa-slider-container">
+          <input type="range" id="sgpa-target-slider" min="5.0" max="10.0" step="0.1" value="8.0" class="sgpa-slider" />
+          <div class="sgpa-slider-ticks">
+            <span>5.0</span>
+            <span>6.0</span>
+            <span>7.0</span>
+            <span>8.0</span>
+            <span>9.0</span>
+            <span>10.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout Status Message -->
+      <div id="sgpa-callout-box" class="sgpa-callout-box">
+        <span class="sgpa-callout-icon" id="sgpa-callout-icon">🎯</span>
+        <div id="sgpa-callout-text">Loading multi-course SGPA forecast...</div>
+      </div>
+
+      <!-- Unmatched Courses Warning Banner -->
+      <div id="sgpa-unmatched-banner" class="sgpa-unmatched-banner" style="display: none;">
+        <span style="font-size: 15px;">⚠️</span>
+        <div style="flex: 1;">
+          <strong>Unconfirmed Course Credits:</strong> One or more courses have unconfirmed credit weightings. Please select credits using the dropdowns below.
+        </div>
+      </div>
+
+      <!-- Course Breakdown Table / Cards -->
+      <div class="sgpa-breakdown-container">
+        <div class="sgpa-breakdown-header">
+          <span style="font-size: 12px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em;">Course-by-Course Standing &amp; Required Scores</span>
+          <span id="sgpa-sync-info" style="font-size: 11px; color: #64748B;">Synced from Canvas Gradebook</span>
+        </div>
+        <div id="sgpa-courses-list" class="sgpa-courses-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-Column Grid: Proactive Nudges & Today's Schedule -->
+    <div class="cc-grid">
+      <!-- Left Column: Proactive Nudges & Controls -->
+      <section class="cc-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Proactive Departure Nudges</h2>
+            <p class="card-sub">Browser notification when it's time to head to class</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cc-nudge-toggle" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div class="control-row">
+          <label class="control-label">Alert Lead Time:</label>
+          <div class="pills-group" id="lead-pills">
+            <button class="pill-btn" data-lead="5">5 min</button>
+            <button class="pill-btn active" data-lead="10">10 min</button>
+            <button class="pill-btn" data-lead="15">15 min</button>
+          </div>
+        </div>
+
+        <div style="margin: 16px 0 12px 0;">
+          <button id="cc-test-nudge-btn" class="action-btn primary" style="width: 100%;">
+            ⚡ Send Test Nudge Now
+          </button>
+        </div>
+
+        <!-- Honest Scope Callout -->
+        <div class="honest-scope-box">
+          <div style="font-weight: 700; margin-bottom: 3px;">Honest Scope Notice</div>
+          Browser nudges fire only while your browser is open. For phone-native alarms that alert you in your pocket, download the 10-minute .ics calendar export below.
+        </div>
+
+        <div style="margin-top: 14px;">
+          <button id="cc-cal-btn" class="action-btn secondary" style="width: 100%;">
+            📅 Download 10m Calendar (.ics)
+          </button>
+        </div>
+      </section>
+
+      <!-- Right Column: Today's Full Schedule -->
+      <section class="cc-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Today's Class Schedule</h2>
+            <p class="card-sub" id="cc-schedule-sub">B.Tech CSE (DS) Sem 1</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="cc-custom-schedule-btn" class="action-btn secondary" style="font-size: 11px; padding: 4px 10px;" title="Upload or customize your timetable">
+              📅 My Schedule
+            </button>
+            <span class="day-badge" id="cc-day-badge">Today</span>
+          </div>
+        </div>
+
+        <div id="today-classes-timeline" class="classes-timeline">
+          <!-- Populated from timetable.js -->
+        </div>
+      </section>
+    </div>
+
+    <!-- Quick Launchpad -->
+    <section class="cc-launchpad">
+      <div class="launchpad-title">CAMPUS QUICK LAUNCHPAD</div>
+      <div class="launchpad-grid">
+        <a href="https://rishiverse.rishihood.edu.in/" target="_blank" class="launch-tile">
+          <span class="tile-icon">🏛️</span>
+          <span class="tile-name">Rishiverse ERP</span>
+        </a>
+        <a href="https://rishihood.instructure.com" target="_blank" class="launch-tile">
+          <span class="tile-icon">🎓</span>
+          <span class="tile-name">Canvas LMS</span>
+        </a>
+        <a href="https://mail.google.com" target="_blank" class="launch-tile">
+          <span class="tile-icon">✉️</span>
+          <span class="tile-name">University Mail</span>
+        </a>
+        <a href="http://172.16.0.1:8090" target="_blank" class="launch-tile">
+          <span class="tile-icon">📶</span>
+          <span class="tile-name">Campus WiFi</span>
+        </a>
+        <a href="https://calendar.google.com" target="_blank" class="launch-tile">
+          <span class="tile-icon">📅</span>
+          <span class="tile-name">Google Calendar</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="cc-footer">
+      <span>Bunkr 2.4.1 &bull; Private &amp; Local &bull; Semester ends: Dec 18, 2026</span>
+    </footer>
+  </div>
+
+  <!-- Schedule Customization & Upload Modal -->
+  <div id="schedule-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">📅</span>
+          <div>
+            <h2 class="modal-title">My Schedule &amp; Timetable</h2>
+            <p class="modal-sub">Upload your schedule in PDF, image, text or CSV — runs 100% locally in your browser</p>
+          </div>
+        </div>
+        <button class="modal-close" id="schedule-modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Active Schedule Banner -->
+        <div id="schedule-status-banner" class="schedule-banner">
+          <div id="schedule-status-text">Loading current schedule...</div>
+          <button id="schedule-reset-btn" class="pill-btn danger" style="display: none; padding: 4px 10px; font-size: 11px;">Reset to Default</button>
+        </div>
+
+        <!-- Upload Drop Zone -->
+        <div class="drop-zone" id="schedule-drop-zone">
+          <div class="drop-icon">📁</div>
+          <div class="drop-title">Drag &amp; drop your timetable here, or <span class="drop-browse">browse</span></div>
+          <div class="drop-sub">Supports PDF (.pdf), Images (.png, .jpg, .webp), Text (.txt, .csv), Calendar (.ics)</div>
+          <input type="file" id="schedule-file-input" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.ics" style="display: none;">
+        </div>
+
+        <!-- Direct Text Paste Option -->
+        <div style="margin-top: 12px; text-align: right;">
+          <button id="schedule-paste-toggle-btn" class="action-btn secondary" style="font-size: 11px; padding: 4px 10px;">
+            📝 Paste Schedule Text
+          </button>
+        </div>
+
+        <div id="schedule-paste-box" style="display: none; margin-top: 10px;">
+          <textarea id="schedule-paste-input" placeholder="Paste schedule text here, e.g.:
+Monday:
+  10:10 - 11:40 Social Communication (RFP)
+  13:30 - 15:00 Problem Solving (A603)
+Tuesday:
+  09:00 - 10:00 Mathematics-I (A610)" style="width: 100%; height: 90px; background: rgba(15,23,42,0.6); border: 1px solid var(--surface-border); border-radius: 8px; color: #F8FAFC; padding: 8px 10px; font-family: monospace; font-size: 11.5px;"></textarea>
+          <div style="margin-top: 6px; text-align: right;">
+            <button id="schedule-parse-paste-btn" class="action-btn primary" style="font-size: 11px; padding: 5px 12px;">Parse Pasted Text</button>
+          </div>
+        </div>
+
+        <!-- Parsing Loader / Error Alert -->
+        <div id="schedule-loading" class="schedule-loading" style="display: none;">
+          <div class="spinner"></div>
+          <div id="schedule-loading-msg" style="margin-top: 8px; font-weight: 600;">Analyzing schedule...</div>
+        </div>
+        <div id="schedule-error-alert" class="schedule-alert danger" style="display: none;"></div>
+        <div id="schedule-success-alert" class="schedule-alert success" style="display: none;"></div>
+
+        <!-- Interactive Preview & Editor Section -->
+        <div id="schedule-preview-section" style="display: none; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+              <strong style="font-size: 13px; color: #F8FAFC;">Weekly Schedule Preview</strong>
+              <div id="schedule-summary-stats" style="font-size: 11px; color: #94A3B8;">21 sessions &bull; 8 subjects</div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button id="schedule-undo-btn" class="action-btn secondary" style="display: none; font-size: 11px; padding: 5px 10px;" title="Undo last change (Ctrl+Z / Cmd+Z)">↩️ Undo</button>
+              <button id="schedule-add-slot-btn" class="action-btn secondary" style="font-size: 11px; padding: 5px 10px;">+ Add Class</button>
+            </div>
+          </div>
+
+          <!-- Needs Review Banner -->
+          <div id="schedule-needs-review-banner" class="needs-review-banner" style="display: none;"></div>
+
+          <!-- Visual Weekly Grid -->
+          <div class="weekly-preview-grid" id="weekly-preview-grid">
+            <!-- Columns Mon - Sat populated dynamically -->
+          </div>
+
+          <!-- Course Harmonization Panel -->
+          <div id="course-harmonization-card" class="harmonization-card" style="display: none;">
+            <div class="harmonization-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 15px;">📚</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 12.5px; color: #F8FAFC;" id="harmonization-title">Course Harmonization</div>
+                  <div style="font-size: 11px; color: #94A3B8;">Cross-referenced with ERP enrolled courses &amp; curriculum</div>
+                </div>
+              </div>
+              <span id="harmonization-summary-badge" class="pill-badge" style="font-size: 10.5px; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 12px; color: #CBD5E1;"></span>
+            </div>
+            <div class="harmonization-list" id="harmonization-list"></div>
+            <div id="harmonization-note" class="harmonization-note" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: #94A3B8;">🔒 100% Private &bull; Zero backend uploads</span>
+        <div style="display: flex; gap: 8px;">
+          <button id="schedule-cancel-btn" class="action-btn secondary">Close</button>
+          <button id="schedule-save-btn" class="action-btn primary" style="display: none;">💾 Save &amp; Apply Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Structured Add / Edit Slot Modal Form -->
+  <div id="slot-modal" class="modal-overlay" style="display: none; z-index: 10002;">
+    <div class="modal-dialog slot-modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;" id="slot-modal-icon">✏️</span>
+          <h3 class="modal-title" id="slot-modal-title">Edit Class Slot</h3>
+        </div>
+        <button class="modal-close" id="slot-modal-close" type="button" aria-label="Close dialog">&times;</button>
+      </div>
+      <form id="slot-editor-form" novalidate>
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <div id="slot-form-error" class="schedule-alert danger" style="display: none; margin-top: 0;"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="slot-form-day">Day of Week <span class="required" style="color:#EF4444;">*</span></label>
+            <select id="slot-form-day" class="form-input" required>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="slot-form-name">Course Name <span class="required" style="color:#EF4444;">*</span></label>
+            <input type="text" id="slot-form-name" class="form-input" placeholder="e.g. Data Structures &amp; Algorithms" required autocomplete="off">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="slot-form-start">Start Time (24h) <span class="required" style="color:#EF4444;">*</span></label>
+              <input type="time" id="slot-form-start" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="slot-form-end">End Time (24h) <span class="required" style="color:#EF4444;">*</span></label>
+              <input type="time" id="slot-form-end" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="slot-form-room">Room Code</label>
+            <input type="text" id="slot-form-room" class="form-input" placeholder="e.g. A603, Lab-3, RFP" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" id="slot-modal-cancel" class="action-btn secondary">Cancel</button>
+          <button type="submit" id="slot-form-submit" class="action-btn primary">Save Slot</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="schedule-toast" class="schedule-toast" style="display: none;"></div>
+
+  <script src="../data/timetable.js"></script>
+  <script src="../lib/engine.js"></script>
+  <script src="../content/canvas_grades.js"></script>
+  <script src="../lib/ocrad.js"></script>
+  <script src="../lib/schedule_parser.js"></script>
+  <script src="newtab.js"></script>
+</body>
+</html>

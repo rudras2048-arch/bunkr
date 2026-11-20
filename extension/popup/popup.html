@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bunkr 2.0</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <img src="../icons/icon32.png" alt="Logo" class="logo">
+        <div>
+          <h1 class="title">Bunkr <small style="font-size:11px; font-weight:normal; opacity:0.6;">v2.4.1</small></h1>
+          <span class="subtitle" id="connection-status">Connecting...</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <button id="open-cc-btn" class="icon-btn" title="Open College Command Center Dashboard">📊</button>
+        <button id="open-drawer-btn" class="icon-btn" title="Open Side Drawer on Page">↗</button>
+      </div>
+    </header>
+
+    <!-- Drift Alert (Visible only when scrape drift is detected) -->
+    <div id="popup-drift-alert" class="drift-alert" style="display: none;">
+      ⚠️ <strong>The ERP page may have changed — showing last known data</strong>
+      <div id="popup-drift-sub" style="font-size: 10.5px; opacity: 0.85; margin-top: 2px;"></div>
+    </div>
+
+    <!-- Overall Summary -->
+    <div class="summary-card" id="summary-card">
+      <div class="summary-top">
+        <div>
+          <div class="summary-pct" id="overall-pct">--%</div>
+          <div class="summary-sub">Overall Attendance</div>
+        </div>
+        <div class="status-pill" id="overall-status-pill">--</div>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="overall-progress-fill"></div>
+      </div>
+
+      <div class="target-row">
+        <span>Target: <strong id="target-label">75%</strong></span>
+        <div class="target-pills">
+          <button class="target-btn active" data-target="75">75%</button>
+          <button class="target-btn" data-target="80">80%</button>
+          <button class="target-btn" data-target="85">85%</button>
+        </div>
+      </div>
+
+      <div class="stat-counts">
+        <div><span id="stat-attended">0</span><small>Attended</small></div>
+        <div><span id="stat-total">0</span><small>Conducted</small></div>
+        <div><span id="stat-missed">0</span><small>Missed</small></div>
+      </div>
+
+      <!-- Compact Semester Projection Row (Phase 3) -->
+      <div class="popup-proj-box" id="popup-proj-box">
+        <div class="popup-proj-top">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em;">Semester Projection</span>
+            <span id="popup-proj-stale-tag" class="popup-stale-pill" style="display: none;">Last Known</span>
+          </div>
+          <span id="popup-coach-pill" class="popup-coach-pill">Silence (Healthy)</span>
+        </div>
+        <div class="popup-proj-stats">
+          <span>Pace: <strong id="popup-proj-pace" style="color: #60A5FA;">--%</strong></span>
+          <span style="color: rgba(255,255,255,0.2);">&bull;</span>
+          <span>Max: <strong id="popup-proj-max" style="color: #34D399;">--%</strong></span>
+          <span style="color: rgba(255,255,255,0.2);">&bull;</span>
+          <span><span id="popup-proj-rem">--</span> left</span>
+        </div>
+      </div>
+
+      <div id="popup-freshness" class="freshness-subtext">🕒 Synced just now</div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="bunk-tab">Bunk Meter</button>
+      <button class="tab-btn" data-tab="forecast-tab">Forecast</button>
+      <button class="tab-btn" data-tab="sim-tab">What-If</button>
+      <button class="tab-btn" data-tab="nudges-tab" id="nudges-tab-btn">Class Nudges</button>
+    </div>
+
+    <!-- Tab 1: Bunk Meter -->
+    <div id="bunk-tab" class="tab-pane active">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Filter courses...">
+      </div>
+      <div id="subject-list" class="subject-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Tab: Semester Forecast -->
+    <div id="forecast-tab" class="tab-pane">
+      <div style="background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.3); border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px;">
+        <div style="font-weight:700; color:#C4B5FD;">Diwali Sem 2026 Ends: Dec 18, 2026</div>
+        <div style="color:#94A3B8; margin-top:2px;">21 teaching days remaining &bull; 89 total classes</div>
+      </div>
+      <div id="forecast-list" class="subject-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Tab 2: What-If Simulator -->
+    <div id="sim-tab" class="tab-pane">
+      <div class="sim-container">
+        <label class="form-label">Select Course:</label>
+        <select id="sim-subject-select" class="select-input">
+          <option value="all">Overall (All Courses)</option>
+        </select>
+
+        <div class="stepper">
+          <span>Attend Next:</span>
+          <div class="stepper-controls">
+            <button id="sim-dec-attend" class="step-btn">-</button>
+            <span id="sim-val-attend" class="step-num">0</span>
+            <button id="sim-inc-attend" class="step-btn">+</button>
+          </div>
+        </div>
+
+        <div class="stepper">
+          <span>Bunk Next:</span>
+          <div class="stepper-controls">
+            <button id="sim-dec-bunk" class="step-btn">-</button>
+            <span id="sim-val-bunk" class="step-num">0</span>
+            <button id="sim-inc-bunk" class="step-btn">+</button>
+          </div>
+        </div>
+
+        <div class="sim-result" id="sim-result-box">
+          <div class="sim-result-label">Projected Attendance</div>
+          <div class="sim-result-value" id="sim-projected-pct">--%</div>
+          <div class="sim-result-delta" id="sim-delta-badge">+0.0%</div>
+          <div class="sim-result-advice" id="sim-advice-text">Simulate classes above</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Class Departure Nudges -->
+    <div id="nudges-tab" class="tab-pane">
+      <div class="summary-card" style="margin-bottom: 12px; background: rgba(30, 41, 59, 0.7);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div>
+            <strong style="font-size:13px; color:#F8FAFC;">Class Departure Nudges</strong>
+            <div style="font-size:11px; color:#94A3B8;">Proactive alert before each class starts</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="popup-nudge-toggle" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 6px;">Alert Lead Time</div>
+        <div class="target-pills" style="margin-bottom: 12px;">
+          <button class="target-btn popup-lead-btn" data-lead="5">5 min</button>
+          <button class="target-btn popup-lead-btn active" data-lead="10">10 min</button>
+          <button class="target-btn popup-lead-btn" data-lead="15">15 min</button>
+        </div>
+
+        <button id="popup-test-nudge-btn" class="footer-btn secondary" style="width: 100%; justify-content: center; margin-bottom: 10px;">
+          ⚡ Send Test Nudge Now
+        </button>
+
+        <div style="font-size: 10.5px; color: #94A3B8; line-height: 1.4; padding: 8px 10px; background: rgba(15,23,42,0.6); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+          ℹ️ <em>Browser nudges fire only while your browser is open. For phone-native alarms, use the 10m .ics calendar export below.</em>
+        </div>
+      </div>
+
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #94A3B8; margin-bottom: 6px;">Today's Classes &amp; Rooms</div>
+      <div id="popup-today-classes" class="subject-list" style="max-height: 130px; overflow-y: auto;">
+        <!-- Populated dynamically -->
+      </div>
+      <div style="margin-top: 8px;">
+        <button id="popup-schedule-btn" class="footer-btn secondary" style="width: 100%; justify-content: center; font-size: 11px;">
+          📅 Customize / Upload Schedule
+        </button>
+      </div>
+    </div>
+
+    <!-- WhatsApp Share Status Button (Phase 3) -->
+    <div style="margin: 8px 0 4px 0;">
+      <button id="popup-copy-status-btn" class="footer-btn" style="background: #059669; color: #FFFFFF; width: 100%; justify-content: center; font-weight: 700;">
+        📋 Copy Status (WhatsApp)
+      </button>
+    </div>
+
+    <!-- Google Calendar 10-Min Pre-Class Alert Bar -->
+    <div style="margin: 12px 0 6px 0;">
+      <button id="cal-sync-btn" class="footer-btn" style="background: linear-gradient(135deg, #1E40AF, #2563EB); color: #FFFFFF; width: 100%; justify-content: center; font-weight: 700;">
+        📅 Add to Google Calendar (10m Alerts)
+      </button>
+    </div>
+
+    <!-- Footer Actions -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+      <button id="diag-btn" class="footer-btn secondary" style="justify-content: center;" title="Copy scraper diagnostics to paste in chat">📋 Diagnostics</button>
+      <button id="restore-btn" class="footer-btn secondary" style="justify-content: center;" title="Restore settings and attendance backup">📤 Restore Backup</button>
+    </div>
+    <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+
+    <footer class="footer">
+      <button id="sync-btn" class="footer-btn">🔄 Sync with Page</button>
+      <button id="export-btn" class="footer-btn secondary">📥 Export Backup</button>
+    </footer>
+  </div>
+
+  <script src="../data/timetable.js"></script>
+  <script src="../lib/engine.js"></script>
+  <script src="../content/math.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

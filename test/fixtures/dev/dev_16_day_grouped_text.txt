@@ -1,0 +1,15 @@
+=== Game Development Routine ===
+Institution: Interactive Media Department
+
+Monday:
+  09:00 - 10:30 Computer Graphics (CG101)
+  11:00 - 12:30 Game Development (CG102)
+
+Wednesday:
+  09:00 - 10:30 Computer Graphics (CG101)
+
+Thursday:
+  11:00 - 12:30 Game Development (CG102)
+
+Friday:
+  14:00 - 16:30 Unity Engine Studio (Studio-A)

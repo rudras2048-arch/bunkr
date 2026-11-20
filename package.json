@@ -1,0 +1,9 @@
+{
+  "name": "bunkr-attendance-tracker",
+  "version": "2.4.1",
+  "private": true,
+  "dependencies": {
+    "playwright": "^1.50.0",
+    "tesseract.js": "^5.1.0"
+  }
+}

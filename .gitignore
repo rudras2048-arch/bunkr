@@ -1,0 +1,10 @@
+node_modules/
+dist/
+tmp-*/
+test-user-data/
+test/screenshots/
+test/*_data.json
+eng.traineddata
+*.zip
+*-report.md
+.DS_Store

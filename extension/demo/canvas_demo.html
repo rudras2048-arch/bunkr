@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance: B.Tech CSE Semester I (Canvas LMS) | Rishihood University</title>
+  <link rel="stylesheet" href="../content/content.css">
+  <style>
+    :root {
+      --ic-brand-primary: #008EE2;
+      --ic-brand-font-color-dark: #2D3B45;
+    }
+    body {
+      font-family: "LatoWeb", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #F5F5F5;
+      color: #2D3B45;
+    }
+    .ic-app-nav-bar {
+      height: 54px;
+      background: #1E293B;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      font-weight: 700;
+      font-size: 16px;
+      gap: 12px;
+    }
+    .canvas-layout {
+      max-width: 1080px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+    .breadcrumbs {
+      font-size: 14px;
+      color: #008EE2;
+      margin-bottom: 12px;
+    }
+    .course-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+      color: #2D3B45;
+    }
+    .table-container {
+      background: #FFFFFF;
+      border: 1px solid #C7CDD1;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    table#attendance_summary {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    table#attendance_summary th {
+      background: #F8FAFC;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid #CBD5E1;
+      font-weight: 700;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    table#attendance_summary td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #E2E8F0;
+      vertical-align: middle;
+    }
+    table#attendance_summary tr:last-child td {
+      border-bottom: none;
+    }
+    .subject-name {
+      font-weight: 600;
+      color: #1E293B;
+    }
+    .subject-code {
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 2px;
+    }
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .pct-safe { background: #ECFDF5; color: #047857; }
+    .pct-warn { background: #FFFBEB; color: #B45309; }
+    .pct-danger { background: #FEF2F2; color: #B91C1C; }
+  </style>
+</head>
+<body class="ic-app">
+  <!-- Canvas Top Navigation Bar -->
+  <div class="ic-app-nav-bar">
+    <span>🎓 Rishihood University Canvas LMS</span>
+    <span style="font-size: 13px; font-weight: normal; opacity: 0.8;">| Student Attendance & Roll Call</span>
+  </div>
+
+  <div class="canvas-layout">
+    <div class="breadcrumbs">
+      Courses &gt; B.Tech CSE (DS) Sem 1 &gt; Attendance Summary
+    </div>
+
+    <h1 class="course-title">Attendance & Bunk Simulator</h1>
+
+    <!-- Canvas Attendance Table -->
+    <div class="table-container">
+      <table id="attendance_summary">
+        <thead>
+          <tr>
+            <th>Course / Subject</th>
+            <th>Sessions Held</th>
+            <th>Attended</th>
+            <th>Absent</th>
+            <th>Attendance %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="subject-name">Mathematics-I (Foundation)</div>
+              <div class="subject-code">CSD02C1001 &bull; Room A610</div>
+            </td>
+            <td>31</td>
+            <td>21</td>
+            <td>10</td>
+            <td><span class="badge-pill pct-warn">67.7%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="subject-name">Problem Solving and Programming</div>
+              <div class="subject-code">CSD02C1002 &bull; Room A603</div>
+            </td>
+            <td>33</td>
+            <td>31</td>
+            <td>2</td>
+            <td><span class="badge-pill pct-safe">93.9%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="subject-name">Web Application Development - I</div>
+              <div class="subject-code">CSD02C1003 &bull; Room A603 / A301</div>
+            </td>
+            <td>17</td>
+            <td>17</td>
+            <td>0</td>
+            <td><span class="badge-pill pct-safe">100.0%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="subject-name">Social Communication I</div>
+              <div class="subject-code">RSPRFC1003 &bull; Room RFP</div>
+            </td>
+            <td>17</td>
+            <td>15</td>
+            <td>2</td>
+            <td><span class="badge-pill pct-safe">88.2%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="subject-name">Computer fundamentals and networking</div>
+              <div class="subject-code">CSD02C1004 &bull; Room A610</div>
+            </td>
+            <td>18</td>
+            <td>16</td>
+            <td>2</td>
+            <td><span class="badge-pill pct-safe">88.9%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="subject-name">Understanding India</div>
+              <div class="subject-code">RSPRFC1001 &bull; Room RFP</div>
+            </td>
+            <td>12</td>
+            <td>10</td>
+            <td>2</td>
+            <td><span class="badge-pill pct-safe">83.3%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="subject-name">KPMG/Edept Workshop Certification Program</div>
+              <div class="subject-code">KPMG01 &bull; Room A603 / A610</div>
+            </td>
+            <td>12</td>
+            <td>11</td>
+            <td>1</td>
+            <td><span class="badge-pill pct-safe">91.7%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="subject-name">Self and Society I</div>
+              <div class="subject-code">RSPRFC1002 &bull; Room RFP</div>
+            </td>
+            <td>7</td>
+            <td>5</td>
+            <td>2</td>
+            <td><span class="badge-pill pct-warn">71.4%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Content Scripts for Demo -->
+  <script src="../data/timetable.js"></script>
+  <script src="../lib/engine.js"></script>
+  <script src="../content/math.js"></script>
+  <script src="../content/parser.js"></script>
+  <script src="../content/ui.js"></script>
+  <script src="../content/content.js"></script>
+</body>
+</html>

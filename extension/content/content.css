@@ -1,0 +1,652 @@
+/* ==========================================================================
+   Bunkr 2.0 — Seamless Inline Integration (Rishiverse & Canvas)
+   Zero Floating Pills • High-Contrast Bold Black Typography • Pure Minimalist
+   ========================================================================== */
+
+/* Remove any floating capsule or dynamic island completely */
+#bunkr-fab,
+#attendmate-fab,
+#bunkr-overlay,
+#attendmate-overlay,
+#bunkr-drawer,
+#attendmate-drawer {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* In-Page Table Header Added Directly to Rishiverse Table */
+.bunkr-col-header,
+.attendmate-col-header {
+  color: #000000 !important;
+  background-color: transparent !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.02em !important;
+  padding: 12px 14px !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+  border-bottom: 2px solid #CBD5E1 !important;
+}
+
+/* In-Page Table Cell Added Directly to Rishiverse Table Row */
+.bunkr-miss-cell,
+.attendmate-miss-cell {
+  color: #000000 !important;
+  background-color: transparent !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  padding: 14px !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+}
+
+.bunkr-miss-cell .am-num,
+.attendmate-miss-cell .am-num {
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  color: #000000 !important;
+}
+
+.bunkr-miss-cell.safe,
+.attendmate-miss-cell.safe {
+  color: #000000 !important;
+}
+
+.bunkr-miss-cell.warning,
+.attendmate-miss-cell.warning {
+  color: #B45309 !important; /* Visible amber-dark */
+}
+
+.bunkr-miss-cell.deficit,
+.attendmate-miss-cell.deficit {
+  color: #B91C1C !important; /* Visible red-dark */
+}
+
+/* Inline Apple HIG Badge for Card & Flexbox Layouts */
+.bunkr-miss-badge,
+.attendmate-miss-badge {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 2px !important;
+  margin-top: 8px !important;
+  padding: 6px 12px !important;
+  background-color: #F8FAFC !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 8px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0F172A !important;
+  line-height: 1.3 !important;
+  user-select: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.2s ease !important;
+}
+
+.bunkr-miss-badge.safe,
+.attendmate-miss-badge.safe {
+  background-color: #F0FDF4 !important;
+  border-color: #BBF7D0 !important;
+  color: #14532D !important;
+}
+
+.bunkr-miss-badge.warning,
+.attendmate-miss-badge.warning {
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+  color: #78350F !important;
+}
+
+.bunkr-miss-badge.deficit,
+.attendmate-miss-badge.deficit {
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #7F1D1D !important;
+}
+
+.bunkr-miss-badge .am-num,
+.attendmate-miss-badge .am-num {
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.am-status-dot {
+  display: inline-block !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  margin-right: 6px !important;
+  vertical-align: middle !important;
+}
+
+.am-status-dot.safe {
+  background-color: #10B981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+.am-status-dot.warning {
+  background-color: #F59E0B !important;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+}
+
+.am-status-dot.deficit {
+  background-color: #EF4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.am-badge-subtext {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  opacity: 0.85 !important;
+  margin-top: 1px !important;
+}
+
+/* In-Page Non-Floating Semester Info Banner */
+#bunkr-page-banner,
+#attendmate-page-banner {
+  margin-bottom: 20px !important;
+  padding: 12px 18px !important;
+  background-color: #FFFFFF !important;
+  border: 1px solid #E5E7EB !important;
+  border-left: 4px solid #111827 !important;
+  border-radius: 8px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  color: #000000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+
+#bunkr-page-banner strong,
+#attendmate-page-banner strong {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+.bunkr-banner-btn,
+.attendmate-banner-btn {
+  background-color: #1D1D1F !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 6px 14px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+  line-height: 1.2 !important;
+}
+
+.bunkr-banner-btn:hover,
+.attendmate-banner-btn:hover {
+  background-color: #374151 !important;
+}
+
+/* ==========================================================================
+   Bunkr Phase 1 — "Never Silently Wrong" Resilience & Override Styles
+   ========================================================================== */
+
+/* Freshness Tag */
+.bunkr-freshness-tag,
+.attendmate-freshness-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: #64748B !important;
+  background-color: #F1F5F9 !important;
+  border: 1px solid #E2E8F0 !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  line-height: 1.2 !important;
+}
+
+.bunkr-freshness-tag.stale,
+.attendmate-freshness-tag.stale {
+  color: #B45309 !important;
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+}
+
+/* Drift Alarm Banner */
+#bunkr-drift-banner,
+#attendmate-drift-banner {
+  margin: 0 0 16px 0 !important;
+  padding: 12px 18px !important;
+  background-color: #FFFBEB !important;
+  border: 1px solid #FCD34D !important;
+  border-left: 5px solid #F59E0B !important;
+  border-radius: 10px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.08) !important;
+  animation: amFadeIn 0.3s ease-out !important;
+}
+
+.am-drift-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.am-drift-icon {
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+.am-drift-title {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #92400E !important;
+}
+
+.am-drift-sub {
+  font-size: 12px !important;
+  color: #B45309 !important;
+  margin-top: 2px !important;
+}
+
+.am-drift-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.am-drift-btn {
+  background-color: #FFFFFF !important;
+  color: #78350F !important;
+  border: 1px solid #FCD34D !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  transition: all 0.15s ease !important;
+}
+
+.am-drift-btn:hover {
+  background-color: #FEF3C7 !important;
+}
+
+.am-drift-btn.primary {
+  background-color: #D97706 !important;
+  color: #FFFFFF !important;
+  border-color: #D97706 !important;
+}
+
+.am-drift-btn.primary:hover {
+  background-color: #B45309 !important;
+}
+
+/* Human Override Badges & Cells */
+.am-manual-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  color: #4338CA !important;
+  background-color: #EEF2FF !important;
+  border: 1px solid #C7D2FE !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  margin-left: 6px !important;
+  vertical-align: middle !important;
+}
+
+.bunkr-miss-badge.manual,
+.attendmate-miss-badge.manual {
+  border-color: #A5B4FC !important;
+  background-color: #F5F3FF !important;
+}
+
+.bunkr-miss-badge.manual .am-num,
+.attendmate-miss-badge.manual .am-num {
+  color: #4338CA !important;
+}
+
+.bunkr-miss-cell.manual,
+.attendmate-miss-cell.manual {
+  position: relative !important;
+}
+
+.attendmate-miss-cell .am-cell-manual-tag {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #4F46E5 !important;
+  margin-top: 2px !important;
+}
+
+.am-edit-trigger {
+  cursor: pointer !important;
+  opacity: 0.6 !important;
+  margin-left: 6px !important;
+  font-size: 12px !important;
+  transition: opacity 0.15s ease !important;
+}
+
+.am-edit-trigger:hover {
+  opacity: 1 !important;
+}
+
+/* Override Inline Modal / Popover */
+.am-override-popover {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  padding: 22px !important;
+  z-index: 999999 !important;
+  width: 360px !important;
+  max-width: 90vw !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+  color: #0F172A !important;
+  animation: amFadeIn 0.2s ease-out !important;
+}
+
+.am-popover-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(2px) !important;
+  z-index: 999998 !important;
+}
+
+.am-popover-title {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  margin-bottom: 4px !important;
+}
+
+.am-popover-sub {
+  font-size: 12px !important;
+  color: #64748B !important;
+  margin-bottom: 16px !important;
+}
+
+.am-popover-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 12px !important;
+  font-size: 13px !important;
+}
+
+.am-popover-row label {
+  font-weight: 600 !important;
+  color: #334155 !important;
+}
+
+.am-popover-input {
+  width: 80px !important;
+  padding: 6px 10px !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+}
+
+.am-popover-input:focus {
+  border-color: #4F46E5 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+}
+
+.am-popover-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin-top: 18px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid #F1F5F9 !important;
+}
+
+.am-btn-ghost {
+  background: none !important;
+  border: none !important;
+  color: #64748B !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+}
+
+.am-btn-ghost:hover {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+.am-btn-reset {
+  background: #FEF2F2 !important;
+  border: 1px solid #FECACA !important;
+  color: #B91C1C !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  margin-right: auto !important;
+}
+
+.am-btn-reset:hover {
+  background: #FEE2E2 !important;
+}
+
+.am-btn-save {
+  background-color: #4F46E5 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 7px 16px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.am-btn-save:hover {
+  background-color: #4338CA !important;
+}
+
+/* Diagnostics Feedback Toast */
+.am-toast {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  background: #0F172A !important;
+  color: #FFFFFF !important;
+  padding: 10px 18px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 9999999 !important;
+  animation: amFadeIn 0.2s ease-out !important;
+}
+
+/* Safety Net Circuit Breaker Pill */
+#bunkr-safety-pill,
+#attendmate-safety-pill {
+  position: fixed !important;
+  bottom: 16px !important;
+  right: 16px !important;
+  background-color: #FEF2F2 !important;
+  border: 1px solid #FCA5A5 !important;
+  border-radius: 20px !important;
+  padding: 6px 14px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif !important;
+  font-size: 12px !important;
+  color: #991B1B !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  z-index: 99999 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+#bunkr-safety-pill button,
+#attendmate-safety-pill button {
+  background: #991B1B !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+@keyframes amFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Canvas LMS Layout & Right Sidebar Overflow Protection
+   Fixes table overflow into #right-side on Canvas LMS pages
+   ========================================================================== */
+
+/* Main content column containment on Canvas LMS */
+#not_right_side,
+.ic-Layout-contentMain,
+#content.ic-Layout-contentMain,
+body.ic-app #not_right_side {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure #right-side stays intact and never overlapped or pushed down */
+#right-side-wrapper,
+#right-side,
+aside#right-side {
+  flex-shrink: 0 !important;
+  position: relative !important;
+  z-index: 10 !important;
+  box-sizing: border-box !important;
+}
+
+/* Grade summary table containment */
+table#grades_summary {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  table-layout: auto;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+}
+
+/* Scrollable container for gradebook or wide tables if viewport is narrow */
+.grades-summary-container,
+#grades_summary_wrapper,
+.table-container {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
+}
+
+/* Table cells wrapping */
+#grades_summary th,
+#grades_summary td {
+  box-sizing: border-box !important;
+}
+
+#grades_summary td.title {
+  max-width: 320px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
+}
+
+#grades_summary td.due,
+#grades_summary td.status,
+#grades_summary td.assignment_score {
+  white-space: nowrap !important;
+}
+
+/* Prevent any injected banner or component from overflowing */
+.canvas-academic-suite-banner,
+.canvas-grades-forecaster,
+.canvas-assignment-radar,
+#bunkr-page-banner,
+#attendmate-page-banner,
+#canvas-files-modal-root,
+.canvas-files-dialog {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ==========================================================================
+   Canvas Course Files Hub & Exam Cram Pack Styles
+   ========================================================================== */
+.canvas-files-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #008EE2;
+  color: #FFFFFF !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 142, 226, 0.3);
+  transition: all 0.2s ease;
+  margin-left: 12px;
+  vertical-align: middle;
+}
+.canvas-files-pill:hover {
+  background: #0077BE;
+  transform: translateY(-1px);
+}
+.canvas-files-pill kbd {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 800;
+}
+
+

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Canvas LMS - Grades for CSD02C1001 Mathematics-I</title>
+  <link rel="stylesheet" href="../content/content.css">
+  <style>
+    :root {
+      --ic-brand-primary: #008EE2;
+      --ic-brand-font-color-dark: #2D3B45;
+    }
+    body {
+      font-family: "LatoWeb", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #F5F5F5;
+      color: #2D3B45;
+    }
+    .ic-app-nav-bar {
+      height: 54px;
+      background: #1E293B;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      font-weight: 700;
+      font-size: 16px;
+      gap: 12px;
+    }
+    .canvas-layout {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 20px;
+      display: flex;
+      gap: 24px;
+    }
+    #not_right_side {
+      flex: 1;
+      min-width: 0;
+    }
+    #right-side {
+      width: 280px;
+      flex-shrink: 0;
+    }
+    #breadcrumbs {
+      font-size: 14px;
+      color: #008EE2;
+      margin-bottom: 12px;
+    }
+    #breadcrumbs ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      gap: 8px;
+    }
+    #breadcrumbs li + li:before {
+      content: "> ";
+      color: #94A3B8;
+    }
+    .course-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+      color: #2D3B45;
+    }
+    table#grades_summary {
+      width: 100%;
+      border-collapse: collapse;
+      background: #FFFFFF;
+      border: 1px solid #C7CDD1;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    table#grades_summary th {
+      background: #F8FAFC;
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 2px solid #CBD5E1;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+    }
+    table#grades_summary td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #E2E8F0;
+      font-size: 14px;
+    }
+    table.summary {
+      width: 100%;
+      border-collapse: collapse;
+      background: #FFFFFF;
+      border: 1px solid #C7CDD1;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    table.summary th, table.summary td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #E2E8F0;
+      text-align: left;
+    }
+    table.summary tr.total th, table.summary tr.total td {
+      font-weight: 700;
+      background: #F8FAFC;
+    }
+  </style>
+</head>
+<body>
+  <div class="ic-app-nav-bar">
+    <span>🎓 Rishihood University Canvas LMS</span>
+    <span style="font-size: 13px; font-weight: normal; opacity: 0.8;">| Student Grades & Evaluation</span>
+  </div>
+
+  <div class="canvas-layout">
+    <div id="not_right_side">
+      <nav id="breadcrumbs" aria-label="breadcrumbs">
+        <ul>
+          <li><a href="/courses">Courses</a></li>
+          <li><a href="/courses/101">CSD02C1001 Mathematics-I</a></li>
+          <li>Grades</li>
+        </ul>
+      </nav>
+
+      <h1 class="course-title">Grades for Student: CSD02C1001 Mathematics-I</h1>
+
+      <table id="grades_summary">
+        <thead>
+          <tr>
+            <th class="title">Name</th>
+            <th class="due">Due</th>
+            <th class="status">Status</th>
+            <th class="score">Score</th>
+            <th class="details">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="student_assignment" id="submission_1">
+            <th class="title">
+              <a href="#">Assignment 1</a>
+              <div class="context">Assignments</div>
+            </th>
+            <td class="due">Sep 10 by 11:59pm</td>
+            <td class="status">Submitted</td>
+            <td class="assignment_score">5 / 5</td>
+            <td class="details"><a href="#">View</a></td>
+          </tr>
+          <tr class="student_assignment" id="submission_2">
+            <th class="title">
+              <a href="#">Assignment 2</a>
+              <div class="context">Assignments</div>
+            </th>
+            <td class="due">Sep 20 by 11:59pm</td>
+            <td class="status">Submitted</td>
+            <td class="assignment_score">10 / 10</td>
+            <td class="details"><a href="#">View</a></td>
+          </tr>
+          <tr class="student_assignment" id="submission_3">
+            <th class="title">
+              <a href="#">Assignment 3</a>
+              <div class="context">Assignments</div>
+            </th>
+            <td class="due">Oct 05 by 11:59pm</td>
+            <td class="status">Submitted</td>
+            <td class="assignment_score">4 / 5</td>
+            <td class="details"><a href="#">View</a></td>
+          </tr>
+          <tr class="student_assignment" id="submission_4">
+            <th class="title">
+              <a href="#">Mid Term Assessment</a>
+              <div class="context">Internal</div>
+            </th>
+            <td class="due">Oct 25 by 11:59pm</td>
+            <td class="status">Graded</td>
+            <td class="assignment_score">85 / 100</td>
+            <td class="details"><a href="#">View</a></td>
+          </tr>
+          <tr class="student_assignment" id="submission_5">
+            <th class="title">
+              <a href="#">End Term Examination</a>
+              <div class="context">External</div>
+            </th>
+            <td class="due">Dec 15 by 11:59pm</td>
+            <td class="status">Unsubmitted</td>
+            <td class="assignment_score">- / 200</td>
+            <td class="details"><a href="#">View</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="right-side">
+      <table class="summary">
+        <thead>
+          <tr>
+            <th scope="col">Group</th>
+            <th scope="col">Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Assignments</th>
+            <td>10%</td>
+          </tr>
+          <tr>
+            <th scope="row">Internal</th>
+            <td>50%</td>
+          </tr>
+          <tr>
+            <th scope="row">External</th>
+            <td>40%</td>
+          </tr>
+          <tr class="total">
+            <th scope="row">Total</th>
+            <td>100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../content/canvas_grades.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.CanvasGrades) {
+        window.CanvasGrades.init();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rishiverse - Student Attendance Portal | Rishihood University</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      background: #F2F2F7;
+      color: #000000;
+      -webkit-font-smoothing: antialiased;
+      padding: 0;
+      margin: 0;
+    }
+    header {
+      background: #FFFFFF;
+      border-bottom: 0.5px solid rgba(60, 60, 67, 0.12);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: rgba(60, 60, 67, 0.60);
+    }
+    .user-profile {
+      font-size: 12px;
+      color: rgba(60, 60, 67, 0.60);
+      font-weight: 500;
+    }
+    .container {
+      max-width: 1040px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+    .banner {
+      background: rgba(0, 113, 227, 0.08);
+      border: 0.5px solid rgba(0, 113, 227, 0.2);
+      color: #0071E3;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #FFFFFF;
+      border-radius: 18px;
+      border: 0.5px solid rgba(60, 60, 67, 0.12);
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 4px;
+    }
+    p.desc {
+      font-size: 13px;
+      color: rgba(60, 60, 67, 0.60);
+      margin-bottom: 24px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      color: rgba(60, 60, 67, 0.60);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 0.5px solid rgba(60, 60, 67, 0.12);
+    }
+    td {
+      padding: 16px 14px;
+      border-bottom: 0.5px solid rgba(60, 60, 67, 0.08);
+      vertical-align: middle;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .course-title {
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .course-code {
+      font-size: 11px;
+      color: rgba(60, 60, 67, 0.60);
+      margin-top: 2px;
+    }
+    .pct-tag {
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 12px;
+    }
+    .pct-high { background: rgba(52, 199, 89, 0.12); color: #34C759; }
+    .pct-mid { background: rgba(0, 113, 227, 0.12); color: #0071E3; }
+    .pct-low { background: rgba(255, 149, 0, 0.12); color: #FF9500; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="brand-title">Rishiverse</div>
+      <div class="brand-sub">Rishihood University Academic Portal</div>
+    </div>
+    <div class="user-profile">
+      Rudra Sharma &bull; B.Tech CSE (DS) Sem 1
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="banner">
+      <strong>Bunkr Active:</strong> Notice the refined Apple HIG capsule badges injected beside each course row, and the bottom-right floating action pill.
+    </div>
+
+    <div class="card">
+      <h2>Attendance Overview</h2>
+      <p class="desc">Diwali Semester 2026–27 &bull; Minimum Required: 75%</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Course</th>
+            <th>Held</th>
+            <th>Attended</th>
+            <th>Absent</th>
+            <th>Percentage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="course-title">Problem Solving and Programming</div>
+              <div class="course-code">A603 &bull; 4 classes/week</div>
+            </td>
+            <td>24</td>
+            <td>21</td>
+            <td>3</td>
+            <td><span class="pct-tag pct-high">87.5%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="course-title">Web Application Development - I</div>
+              <div class="course-code">A603 / A301 &bull; 4 classes/week</div>
+            </td>
+            <td>24</td>
+            <td>20</td>
+            <td>4</td>
+            <td><span class="pct-tag pct-high">83.3%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="course-title">Mathematics-I (Foundation)</div>
+              <div class="course-code">A610 &bull; 4 classes/week</div>
+            </td>
+            <td>24</td>
+            <td>18</td>
+            <td>6</td>
+            <td><span class="pct-tag pct-mid">75.0%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="course-title">Social Communication (RFP)</div>
+              <div class="course-code">RFP &bull; 2 classes/week</div>
+            </td>
+            <td>14</td>
+            <td>12</td>
+            <td>2</td>
+            <td><span class="pct-tag pct-high">85.7%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="course-title">Computer Fundamentals and Networking</div>
+              <div class="course-code">A610 &bull; 2 classes/week</div>
+            </td>
+            <td>14</td>
+            <td>10</td>
+            <td>4</td>
+            <td><span class="pct-tag pct-low">71.4%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="course-title">Understanding India (RFP)</div>
+              <div class="course-code">RFP &bull; 2 sessions/week</div>
+            </td>
+            <td>12</td>
+            <td>10</td>
+            <td>2</td>
+            <td><span class="pct-tag pct-high">83.3%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="course-title">KPMG/Edept Workshop Certification Program</div>
+              <div class="course-code">A603 / A610 &bull; 2 classes/week</div>
+            </td>
+            <td>12</td>
+            <td>11</td>
+            <td>1</td>
+            <td><span class="pct-tag pct-high">91.7%</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="course-title">Self and Society I (RFP)</div>
+              <div class="course-code">RFP &bull; 1 class/week</div>
+            </td>
+            <td>7</td>
+            <td>5</td>
+            <td>2</td>
+            <td><span class="pct-tag pct-low">71.4%</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <link rel="stylesheet" href="../content/content.css">
+  <script src="../data/timetable.js"></script>
+  <script src="../lib/engine.js"></script>
+  <script src="../content/math.js"></script>
+  <script src="../content/parser.js"></script>
+  <script src="../content/ui.js"></script>
+  <script src="../content/content.js"></script>
+</body>
+</html>
